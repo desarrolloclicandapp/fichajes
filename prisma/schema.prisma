@@ -1,0 +1,136 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  CLIENT_ADMIN
+  WORKER
+}
+
+enum TimeEventType {
+  CLOCK_IN
+  BREAK_START
+  BREAK_END
+  CLOCK_OUT
+}
+
+enum AbsenceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AbsenceType {
+  VACATION
+  SICK_LEAVE
+  PAID_LEAVE
+  UNPAID_LEAVE
+  JUSTIFIED_OTHER
+  UNJUSTIFIED
+}
+
+model Company {
+  id          String   @id @default(uuid())
+  name        String
+  taxId       String?  // CIF/NIF
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users            User[]
+  timeEvents       TimeEvent[]
+  dailySummaries   TimeDailySummary[]
+  absenceRequests  AbsenceRequest[]
+  auditLogs        AuditLog[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String?
+  role         Role     @default(WORKER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company   Company? @relation(fields: [companyId], references: [id])
+  companyId String?
+
+  timeEvents      TimeEvent[]
+  dailySummaries  TimeDailySummary[]
+  absenceRequests AbsenceRequest[]
+  auditLogs       AuditLog[]
+}
+
+model TimeEvent {
+  id         String        @id @default(uuid())
+  type       TimeEventType
+  timestamp  DateTime      @default(now())
+
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+}
+
+model TimeDailySummary {
+  id               String   @id @default(uuid())
+  date             DateTime
+  workedMinutes    Int      @default(0)
+  breakMinutes     Int      @default(0)
+  overtimeMinutes  Int      @default(0)
+  status           String   // COMPLETE, MISSING_EVENTS, NO_DATA...
+
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  @@unique([userId, date])
+}
+
+model AbsenceRequest {
+  id             String         @id @default(uuid())
+  requestedType  AbsenceType    // lo que el usuario propone (excepto UNJUSTIFIED si quieres)
+  finalType      AbsenceType?   // lo que decide el admin (puede ser UNJUSTIFIED)
+  startDate      DateTime
+  endDate        DateTime
+  status         AbsenceStatus  // PENDING / APPROVED / REJECTED
+  reason         String?
+  adminComment   String?
+  attachmentUrl  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  entityType  String
+  entityId    String
+  action      String   // CREATE, UPDATE, DELETE
+  oldValue    Json?
+  newValue    Json?
+  createdAt   DateTime @default(now())
+
+  company   Company? @relation(fields: [companyId], references: [id])
+  companyId String?
+
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+}

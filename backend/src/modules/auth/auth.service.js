@@ -8,6 +8,13 @@ async function login({ email, password }) {
     where: { email },
     include: { company: true },
   });
+  function minutesToHHMM(minutes) {
+  if (minutes == null) return null;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 
   if (!user || !user.isActive) {
     throw { status: 401, message: 'Credenciales inválidas' };
@@ -35,6 +42,10 @@ async function login({ email, password }) {
       role: user.role,
       companyId: user.companyId,
       companyName: user.company?.name ?? null,
+      workStartMinutes: user.workStartMinutes,
+      workEndMinutes: user.workEndMinutes,
+      workStartTime: minutesToHHMM(user.workStartMinutes),
+      workEndTime: minutesToHHMM(user.workEndMinutes),
     },
   };
 }
@@ -56,6 +67,10 @@ async function getProfile(userId) {
     role: user.role,
     companyId: user.companyId,
     companyName: user.company?.name ?? null,
+    workStartMinutes: user.workStartMinutes,
+    workEndMinutes: user.workEndMinutes,
+    workStartTime: minutesToHHMM(user.workStartMinutes),
+    workEndTime: minutesToHHMM(user.workEndMinutes),
   };
 }
 

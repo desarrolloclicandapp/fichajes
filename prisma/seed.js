@@ -63,6 +63,8 @@ if (!company) {
       role: Role.WORKER,
       isActive: true,
       companyId: company.id,
+      workStartMinutes: 9 * 60,   // 09:00
+      workEndMinutes: 17 * 60,
     },
   });
 

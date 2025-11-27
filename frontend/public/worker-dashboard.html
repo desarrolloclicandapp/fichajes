@@ -92,11 +92,23 @@
         <h2 class="text-sm font-semibold text-slate-700 mb-3">
           Fichajes de hoy
         </h2>
+        
         <div id="eventsContainer" class="bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-56 overflow-y-auto text-sm">
           <p class="text-slate-400 text-sm">
             Sin fichajes todavía.
           </p>
         </div>
+        <div class="mt-6">
+  <h2 class="text-sm font-semibold text-slate-700 mb-3">
+    Últimos días
+  </h2>
+  <div id="historyContainer" class="bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-64 overflow-y-auto text-sm">
+    <p class="text-slate-400 text-sm">
+      Cargando historial...
+    </p>
+  </div>
+</div>
+
       </div>
     </div>
   </div>
@@ -110,6 +122,12 @@
 
     function getUserInfo() {
       const raw = localStorage.getItem('userInfo');
+      document.getElementById('userInfoText').textContent =
+  `${user.fullName || user.email} · ${user.role}` +
+  (user.workStartTime && user.workEndTime
+    ? ` · Horario: ${user.workStartTime} - ${user.workEndTime}`
+    : '');
+
       if (!raw) return null;
       try {
         return JSON.parse(raw);
@@ -150,128 +168,204 @@
       setInterval(tick, 1000);
     }
 
-    async function loadTodayEvents() {
-      const container = document.getElementById('eventsContainer');
-      container.innerHTML = '<p class="text-slate-400 text-sm">Cargando...</p>';
+   async function loadTodayEvents() {
+  const container = document.getElementById('eventsContainer');
+  container.innerHTML = '<p class="text-slate-400 text-sm">Cargando...</p>';
 
-      try {
-        const res = await fetch(API_BASE_URL + '/time/my-today', {
-          headers: {
-            'Authorization': 'Bearer ' + getToken(),
-          },
-        });
+  try {
+    const res = await fetch(API_BASE_URL + '/time/my-today', {
+      headers: {
+        'Authorization': 'Bearer ' + getToken(),
+      },
+    });
 
-        if (!res.ok) {
-          container.innerHTML = '<p class="text-rose-500 text-sm">Error al cargar fichajes.</p>';
-          return;
-        }
-
-        const events = await res.json();
-
-        if (!events.length) {
-          container.innerHTML = '<p class="text-slate-400 text-sm">Sin fichajes todavía.</p>';
-          updateStatus(null);
-          return;
-        }
-
-        const list = document.createElement('ul');
-        list.className = 'space-y-1';
-
-        events.forEach(ev => {
-          const li = document.createElement('li');
-          li.className = 'flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-slate-200';
-
-          let label = '';
-          switch (ev.type) {
-            case 'CLOCK_IN':
-              label = 'Entrada';
-              break;
-            case 'BREAK_START':
-              label = ev.reason ? `Inicio pausa (${ev.reason})` : 'Inicio pausa';
-              break;
-            case 'BREAK_END':
-              label = 'Fin pausa';
-              break;
-            case 'CLOCK_OUT':
-              label = 'Salida';
-              break;
-          }
-
-          li.innerHTML = `
-            <span class="font-medium text-slate-700">${label}</span>
-            <span class="font-mono text-xs text-slate-500">${formatTime(ev.timestamp)}</span>
-          `;
-
-          list.appendChild(li);
-        });
-
-        container.innerHTML = '';
-        container.appendChild(list);
-
-        const last = events[events.length - 1];
-        updateStatus(last);
-      } catch (err) {
-        console.error(err);
-        container.innerHTML = '<p class="text-rose-500 text-sm">Error al conectar con el servidor.</p>';
-      }
+    if (!res.ok) {
+      container.innerHTML = '<p class="text-rose-500 text-sm">Error al cargar fichajes.</p>';
+      return;
     }
+
+    const data = await res.json(); // { events, pauses }
+    const events = data.events || [];
+    const pauses = data.pauses || [];
+
+    if (!events.length) {
+      container.innerHTML = '<p class="text-slate-400 text-sm">Sin fichajes todavía.</p>';
+      updateStatus(null);
+      return;
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'space-y-1';
+
+    events.forEach(ev => {
+      const li = document.createElement('li');
+      li.className = 'flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-slate-200';
+
+      let label = '';
+      switch (ev.type) {
+        case 'CLOCK_IN':
+          label = 'Entrada';
+          break;
+        case 'BREAK_START':
+          label = ev.reason ? `Inicio pausa (${ev.reason})` : 'Inicio pausa';
+          break;
+        case 'BREAK_END':
+          label = 'Fin pausa';
+          break;
+        case 'CLOCK_OUT':
+          label = 'Salida';
+          break;
+      }
+
+      li.innerHTML = `
+        <span class="font-medium text-slate-700">${label}</span>
+        <span class="font-mono text-xs text-slate-500">${formatTime(ev.timestamp)}</span>
+      `;
+
+      list.appendChild(li);
+    });
+
+    // si quieres mostrar debajo un pequeño resumen de pausas:
+    if (pauses.length) {
+      const sep = document.createElement('div');
+      sep.className = 'pt-2 mt-2 border-t border-slate-200 text-xs text-slate-500';
+      sep.textContent = 'Pausas de hoy:';
+      list.appendChild(sep);
+
+      pauses.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'flex justify-between text-xs text-slate-600';
+        item.innerHTML = `
+          <span>${p.reason ? p.reason + ': ' : ''}${formatTime(p.start)} - ${formatTime(p.end)}</span>
+          <span>${p.durationFormatted} min
+</span>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    container.innerHTML = '';
+    container.appendChild(list);
+
+    const last = events[events.length - 1];
+    updateStatus(last);
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<p class="text-rose-500 text-sm">Error al conectar con el servidor.</p>';
+  }
+}
+
 
     function updateStatus(lastEvent) {
-      const badge = document.getElementById('statusBadge');
-      const lastActionEl = document.getElementById('lastAction');
+      const user = getUserInfo();
 
-      const btnClockIn = document.getElementById('btnClockIn');
-      const btnClockOut = document.getElementById('btnClockOut');
-      const btnBreakStart = document.getElementById('btnBreakStart');
-      const btnBreakEnd = document.getElementById('btnBreakEnd');
+let scheduledStart = null;
+let scheduledEnd = null;
 
-      if (!lastEvent) {
-        badge.textContent = 'Fuera de jornada';
-        badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700';
-        lastActionEl.textContent = '-';
+if (user && typeof user.workStartMinutes === 'number') {
+  const now = new Date();
+  scheduledStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    0,
+    0,
+    0
+  );
+  scheduledStart.setMinutes(user.workStartMinutes);
+}
 
-        btnClockIn.disabled = false;
-        btnClockOut.disabled = true;
-        btnBreakStart.disabled = true;
-        btnBreakEnd.disabled = true;
-        return;
-      }
+if (user && typeof user.workEndMinutes === 'number') {
+  const now = new Date();
+  scheduledEnd = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    0,
+    0,
+    0
+  );
+  scheduledEnd.setMinutes(user.workEndMinutes);
+}
 
-      lastActionEl.textContent = `${lastEvent.type} · ${formatTime(lastEvent.timestamp)}`;
+  const badge = document.getElementById('statusBadge');
+  const lastActionEl = document.getElementById('lastAction');
 
-      switch (lastEvent.type) {
-        case 'CLOCK_IN':
-        case 'BREAK_END':
-          badge.textContent = 'Trabajando';
-          badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700';
+  const btnClockIn = document.getElementById('btnClockIn');
+  const btnClockOut = document.getElementById('btnClockOut');
+  const btnBreakStart = document.getElementById('btnBreakStart');
+  const btnBreakEnd = document.getElementById('btnBreakEnd');
 
-          btnClockIn.disabled = true;
-          btnClockOut.disabled = false;
-          btnBreakStart.disabled = false;
-          btnBreakEnd.disabled = true;
-          break;
+  if (!lastEvent) {
+  const now = new Date();
 
-        case 'BREAK_START':
-          badge.textContent = 'En pausa';
-          badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700';
+  badge.textContent = 'Fuera de jornada';
+  badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700';
+  lastActionEl.textContent = '-';
 
-          btnClockIn.disabled = true;
-          btnClockOut.disabled = false;
-          btnBreakStart.disabled = true;
-          btnBreakEnd.disabled = false;
-          break;
+  let canClockIn = true;
 
-        case 'CLOCK_OUT':
-          badge.textContent = 'Jornada finalizada';
-          badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700';
-
-          btnClockIn.disabled = false;
-          btnClockOut.disabled = true;
-          btnBreakStart.disabled = true;
-          btnBreakEnd.disabled = true;
-          break;
-      }
+  if (scheduledStart) {
+    const earliest = new Date(scheduledStart.getTime() - 30 * 60 * 1000);
+    if (now < earliest) {
+      canClockIn = false;
+      badge.textContent = 'Fuera de horario';
+      badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-500';
     }
+  }
+
+  btnClockIn.disabled = !canClockIn;
+  btnClockOut.disabled = true;
+  btnBreakStart.disabled = true;
+  btnBreakEnd.disabled = true;
+  return;
+}
+
+
+const typeLabels = {
+  CLOCK_IN: 'Entrada',
+  BREAK_START: 'Inicio de pausa',
+  BREAK_END: 'Fin de pausa',
+  CLOCK_OUT: 'Salida',
+};
+
+lastActionEl.textContent = `${typeLabels[lastEvent.type] || lastEvent.type} · ${formatTime(lastEvent.timestamp)}`;
+
+
+  switch (lastEvent.type) {
+    case 'CLOCK_IN':
+    case 'BREAK_END':
+      badge.textContent = 'Trabajando';
+      badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700';
+
+      btnClockIn.disabled = true;
+      btnClockOut.disabled = false;
+      btnBreakStart.disabled = false;
+      btnBreakEnd.disabled = true;
+      break;
+
+    case 'BREAK_START':
+      badge.textContent = 'En pausa';
+      badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700';
+
+      btnClockIn.disabled = true;
+      btnClockOut.disabled = false;
+      btnBreakStart.disabled = true;
+      btnBreakEnd.disabled = false;
+      break;
+
+    case 'CLOCK_OUT':
+      badge.textContent = 'Jornada finalizada';
+      badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700';
+
+      btnClockIn.disabled = true;   // ⬅ no permitir segunda jornada
+      btnClockOut.disabled = true;
+      btnBreakStart.disabled = true;
+      btnBreakEnd.disabled = true;
+      break;
+  }
+}
+
 
     async function sendEvent(endpoint, extraBody = {}) {
       const res = await fetch(API_BASE_URL + endpoint, {
@@ -312,14 +406,45 @@
 
       startClock();
       loadTodayEvents();
+      loadHistory(); 
 
       document.getElementById('btnClockIn').addEventListener('click', () => {
         sendEvent('/time/clock-in');
       });
 
       document.getElementById('btnClockOut').addEventListener('click', () => {
-        sendEvent('/time/clock-out');
-      });
+  const user = getUserInfo();
+  let scheduledEnd = null;
+
+  if (user && typeof user.workEndMinutes === 'number') {
+    const now = new Date();
+    scheduledEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0
+    );
+    scheduledEnd.setMinutes(user.workEndMinutes);
+  }
+
+  const now = new Date();
+
+  if (scheduledEnd && now < scheduledEnd) {
+    const reason = prompt(
+      'Estás finalizando antes de tu hora de salida.\nPor favor, indica el motivo:'
+    );
+    if (!reason || !reason.trim()) {
+      // Si no escribe nada, no enviamos el evento
+      return;
+    }
+    sendEvent('/time/clock-out', { reason: reason.trim() });
+  } else {
+    sendEvent('/time/clock-out');
+  }
+});
+
 
       document.getElementById('btnBreakStart').addEventListener('click', () => {
         const reason = document.getElementById('pauseReason').value || null;
@@ -330,6 +455,103 @@
         sendEvent('/time/break-end');
       });
     });
+    async function loadHistory() {
+  const container = document.getElementById('historyContainer');
+  container.innerHTML = '<p class="text-slate-400 text-sm">Cargando historial...</p>';
+
+  try {
+    const res = await fetch(API_BASE_URL + '/time/my-history?days=7', {
+      headers: {
+        'Authorization': 'Bearer ' + getToken(),
+      },
+    });
+
+    if (!res.ok) {
+      container.innerHTML = '<p class="text-rose-500 text-sm">Error al cargar el historial.</p>';
+      return;
+    }
+
+    const history = await res.json(); // array
+
+    if (!history.length) {
+      container.innerHTML = '<p class="text-slate-400 text-sm">Sin fichajes recientes.</p>';
+      return;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'space-y-3';
+
+    history.forEach(day => {
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-lg border border-slate-200 px-3 py-2';
+
+      const dateObj = new Date(day.date + 'T00:00:00');
+      const dateLabel = dateObj.toLocaleDateString('es-ES', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+      
+      const header = document.createElement('div');
+      header.className = 'flex justify-between items-center mb-1';
+const workedLabel = day.totalWorkedFormatted
+  ? `${day.totalWorkedFormatted} hs. trabajadas`
+  : 'Sin jornada completa';
+
+header.innerHTML = `
+  <span class="font-semibold text-slate-700">${dateLabel}</span>
+  <span class="text-xs text-slate-500">
+    ${workedLabel}
+  </span>
+`;
+
+
+      const body = document.createElement('div');
+      body.className = 'text-xs text-slate-600';
+const timesInfo = `
+  <div class="text-slate-500 mb-1">
+    Entrada: ${day.firstClockIn ? formatTime(day.firstClockIn) : '--:--:--'} ·
+    Salida: ${day.lastClockOut ? formatTime(day.lastClockOut) : '--:--:--'}
+  </div>
+`;
+      let pausesHtml = '';
+if (day.pauses && day.pauses.length) {
+  const pausesLines = day.pauses
+    .map(
+      p =>
+        `${formatTime(p.start)} - ${formatTime(p.end)} (${p.durationFormatted} min${
+          p.reason ? ', ' + p.reason : ''
+        })`
+    )
+    .join('<br/>');
+
+  pausesHtml = `
+    <div class="mt-1">
+      <span class="font-medium">Pausas:</span><br/>
+      ${pausesLines}
+    </div>
+  `;
+} else {
+  pausesHtml = `<div class="mt-1 text-slate-400">Sin pausas registradas.</div>`;
+}
+
+body.innerHTML = timesInfo + pausesHtml;
+
+
+      card.appendChild(header);
+      card.appendChild(body);
+      wrapper.appendChild(card);
+    });
+
+    container.innerHTML = '';
+    container.appendChild(wrapper);
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<p class="text-rose-500 text-sm">Error al conectar con el servidor.</p>';
+  }
+}
+
   </script>
 </body>
 </html>

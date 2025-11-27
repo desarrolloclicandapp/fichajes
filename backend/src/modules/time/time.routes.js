@@ -1,3 +1,4 @@
+// backend/src/modules/time/time.routes.js
 const express = require('express');
 const controller = require('./time.controller');
 const { authMiddleware } = require('../../middlewares/auth');
@@ -31,6 +32,10 @@ router.post('/clock-out', (req, res, next) => {
   controller.createEvent(req, res, next);
 });
 
+// hoy
 router.get('/my-today', controller.getMyTodayEvents);
+
+// últimos días
+router.get('/my-history', controller.getMyHistory);
 
 module.exports = router;

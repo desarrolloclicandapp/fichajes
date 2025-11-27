@@ -5,31 +5,43 @@ const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 async function main() {
-  // 1. Empresa de prueba
-  const company = await prisma.company.create({
+  // 1. Empresa de prueba (si ya existe una con ese name, la reutilizamos)
+  // 1. Empresa de prueba (si ya existe con ese name, la reutilizamos)
+let company = await prisma.company.findFirst({
+  where: { name: 'Empresa Demo' },
+});
+
+if (!company) {
+  company = await prisma.company.create({
     data: {
       name: 'Empresa Demo',
       taxId: 'B12345678',
     },
   });
+}
 
-  // 2. Super admin (sin companyId si quieres que esté "global")
+
+  // 2. Super admin
   const superAdminPassword = await bcrypt.hash('superadmin123', 10);
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: 'superadmin@sistema.com' },
+    update: {}, // aquí podrías actualizar cosas si quisieras
+    create: {
       email: 'superadmin@sistema.com',
       passwordHash: superAdminPassword,
       fullName: 'Super Admin',
       role: Role.SUPER_ADMIN,
       isActive: true,
-      // companyId: null // lo dejas sin empresa
+      // companyId: null
     },
   });
 
   // 3. Admin de la empresa
   const adminPassword = await bcrypt.hash('admin123', 10);
-  const admin = await prisma.user.create({
-    data: {
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@empresademo.com' },
+    update: {},
+    create: {
       email: 'admin@empresademo.com',
       passwordHash: adminPassword,
       fullName: 'Admin Empresa Demo',
@@ -41,8 +53,10 @@ async function main() {
 
   // 4. Trabajador de ejemplo
   const workerPassword = await bcrypt.hash('worker123', 10);
-  const worker = await prisma.user.create({
-    data: {
+  const worker = await prisma.user.upsert({
+    where: { email: 'trabajador@empresademo.com' },
+    update: {},
+    create: {
       email: 'trabajador@empresademo.com',
       passwordHash: workerPassword,
       fullName: 'Trabajador Demo',
@@ -52,7 +66,17 @@ async function main() {
     },
   });
 
-  // 5. Unos fichajes de prueba para hoy
+  // 5. (Opcional) antes de crear fichajes/ausencias, borra los de prueba anteriores
+  await prisma.timeEvent.deleteMany({
+    where: { userId: worker.id, companyId: company.id },
+  });
+  await prisma.timeDailySummary.deleteMany({
+    where: { userId: worker.id, companyId: company.id },
+  });
+  await prisma.absenceRequest.deleteMany({
+    where: { userId: worker.id, companyId: company.id },
+  });
+
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -60,37 +84,36 @@ async function main() {
     data: [
       {
         type: TimeEventType.CLOCK_IN,
-        timestamp: new Date(today.getTime() + 9 * 60 * 60 * 1000), // 09:00
+        timestamp: new Date(today.getTime() + 9 * 60 * 60 * 1000),
         companyId: company.id,
         userId: worker.id,
       },
       {
         type: TimeEventType.BREAK_START,
-        timestamp: new Date(today.getTime() + 13 * 60 * 60 * 1000), // 13:00
+        timestamp: new Date(today.getTime() + 13 * 60 * 60 * 1000),
         companyId: company.id,
         userId: worker.id,
       },
       {
         type: TimeEventType.BREAK_END,
-        timestamp: new Date(today.getTime() + 14 * 60 * 60 * 1000), // 14:00
+        timestamp: new Date(today.getTime() + 14 * 60 * 60 * 1000),
         companyId: company.id,
         userId: worker.id,
       },
       {
         type: TimeEventType.CLOCK_OUT,
-        timestamp: new Date(today.getTime() + 18 * 60 * 60 * 1000), // 18:00
+        timestamp: new Date(today.getTime() + 18 * 60 * 60 * 1000),
         companyId: company.id,
         userId: worker.id,
       },
     ],
   });
 
-  // 6. Resumen diario de ejemplo
   await prisma.timeDailySummary.create({
     data: {
       date: today,
-      workedMinutes: 8 * 60,   // 8h
-      breakMinutes: 60,        // 1h
+      workedMinutes: 8 * 60,
+      breakMinutes: 60,
       overtimeMinutes: 0,
       status: 'COMPLETE',
       companyId: company.id,
@@ -98,7 +121,6 @@ async function main() {
     },
   });
 
-  // 7. Ejemplo de ausencia pendiente y otra aprobada
   await prisma.absenceRequest.create({
     data: {
       requestedType: AbsenceType.VACATION,
@@ -107,19 +129,6 @@ async function main() {
       endDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
       status: AbsenceStatus.PENDING,
       reason: 'Vacaciones de verano',
-      companyId: company.id,
-      userId: worker.id,
-    },
-  });
-
-  await prisma.absenceRequest.create({
-    data: {
-      requestedType: AbsenceType.SICK_LEAVE,
-      finalType: AbsenceType.SICK_LEAVE,
-      startDate: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000),
-      endDate: new Date(today.getTime() - 1 * 24 * 60 * 60 * 1000),
-      status: AbsenceStatus.APPROVED,
-      reason: 'Gripe',
       companyId: company.id,
       userId: worker.id,
     },

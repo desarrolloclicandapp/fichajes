@@ -1,4 +1,3 @@
-// backend/src/modules/auth/auth.service.js
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../../config/prisma');
@@ -7,31 +6,26 @@ const env = require('../../config/env');
 async function login({ email, password }) {
   const user = await prisma.user.findUnique({
     where: { email },
-    include: {
-      company: true,
-    },
+    include: { company: true },
   });
 
   if (!user || !user.isActive) {
     throw { status: 401, message: 'Credenciales inválidas' };
   }
 
-  const passwordOk = await bcrypt.compare(password, user.passwordHash);
-  if (!passwordOk) {
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if (!ok) {
     throw { status: 401, message: 'Credenciales inválidas' };
   }
 
-  const tokenPayload = {
+  const payload = {
     userId: user.id,
     role: user.role,
     companyId: user.companyId || null,
   };
 
-  const token = jwt.sign(tokenPayload, env.JWT_SECRET, {
-    expiresIn: '8h',
-  });
+  const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '8h' });
 
-  // Lo que devolvemos al frontend
   return {
     token,
     user: {
@@ -65,7 +59,4 @@ async function getProfile(userId) {
   };
 }
 
-module.exports = {
-  login,
-  getProfile,
-};
+module.exports = { login, getProfile };

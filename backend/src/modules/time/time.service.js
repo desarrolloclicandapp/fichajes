@@ -1,8 +1,7 @@
-// backend/src/modules/time/time.service.js
 const prisma = require('../../config/prisma');
 const { TimeEventType } = require('@prisma/client');
 
-async function registerEvent({ userId, companyId, type }) {
+async function registerEvent({ userId, companyId, type, reason }) {
   if (!companyId) {
     throw { status: 400, message: 'El usuario no está asociado a una empresa' };
   }
@@ -16,6 +15,7 @@ async function registerEvent({ userId, companyId, type }) {
       type,
       companyId,
       userId,
+      reason: reason || null,
     },
   });
 

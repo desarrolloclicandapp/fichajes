@@ -1,16 +1,15 @@
-// backend/src/modules/time/time.controller.js
-const { TimeEventType } = require('@prisma/client');
 const timeService = require('./time.service');
 
 async function createEvent(req, res) {
   try {
-    const { type } = req.body;
+    const { type, reason } = req.body;
     const { id: userId, companyId } = req.user;
 
     const event = await timeService.registerEvent({
       userId,
       companyId,
       type,
+      reason,
     });
 
     return res.status(201).json(event);
@@ -25,7 +24,6 @@ async function createEvent(req, res) {
 async function getMyTodayEvents(req, res) {
   try {
     const { id: userId } = req.user;
-
     const events = await timeService.getTodayEventsForUser(userId);
     return res.json(events);
   } catch (err) {
@@ -36,7 +34,4 @@ async function getMyTodayEvents(req, res) {
   }
 }
 
-module.exports = {
-  createEvent,
-  getMyTodayEvents,
-};
+module.exports = { createEvent, getMyTodayEvents };

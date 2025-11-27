@@ -1,4 +1,3 @@
-// backend/src/modules/auth/auth.controller.js
 const authService = require('./auth.service');
 
 async function login(req, res) {
@@ -6,16 +5,13 @@ async function login(req, res) {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: 'Email y password son obligatorios' });
+      return res.status(400).json({ message: 'Email y password son obligatorios' });
     }
 
     const result = await authService.login({ email, password });
     return res.json(result);
   } catch (err) {
     console.error('Login error:', err);
-
     const status = err.status || 500;
     const message = err.message || 'Error en el login';
     return res.status(status).json({ message });
@@ -35,7 +31,4 @@ async function me(req, res) {
   }
 }
 
-module.exports = {
-  login,
-  me,
-};
+module.exports = { login, me };

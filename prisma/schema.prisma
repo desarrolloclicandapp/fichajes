@@ -74,7 +74,7 @@ model TimeEvent {
   id         String        @id @default(uuid())
   type       TimeEventType
   timestamp  DateTime      @default(now())
-
+  reason     String?
   company   Company @relation(fields: [companyId], references: [id])
   companyId String
 

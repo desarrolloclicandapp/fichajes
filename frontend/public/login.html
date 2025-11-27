@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Iniciar sesión - Sistema de fichajes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 flex items-center justify-center">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+    <h1 class="text-2xl font-semibold text-slate-800 mb-2">Iniciar sesión</h1>
+    <p class="text-sm text-slate-500 mb-6">
+      Accede para fichar tu jornada y gestionar tus horarios.
+    </p>
+
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Correo electrónico</label>
+        <input
+          id="email"
+          type="email"
+          required
+          class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="tuemail@empresa.com"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+        <input
+          id="password"
+          type="password"
+          required
+          class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="••••••••"
+        />
+      </div>
+
+      <div id="errorMsg" class="text-sm text-rose-500 h-5"></div>
+
+      <button
+        type="submit"
+        class="w-full py-3 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Entrar
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const API_BASE_URL = '/api';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('loginForm');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+      const errorMsg = document.getElementById('errorMsg');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorMsg.textContent = '';
+        form.querySelector('button[type="submit"]').disabled = true;
+
+        try {
+          const res = await fetch(API_BASE_URL + '/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: emailInput.value,
+              password: passwordInput.value,
+            }),
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            errorMsg.textContent = data.message || 'Error al iniciar sesión';
+            form.querySelector('button[type="submit"]').disabled = false;
+            return;
+          }
+
+          // Guardamos token y datos de usuario
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userInfo', JSON.stringify(data.user));
+
+          // De momento redirigimos siempre al panel de trabajador
+          window.location.href = '/worker-dashboard.html';
+        } catch (err) {
+          console.error(err);
+          errorMsg.textContent = 'No se pudo conectar con el servidor';
+          form.querySelector('button[type="submit"]').disabled = false;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

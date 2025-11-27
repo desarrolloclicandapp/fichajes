@@ -3,31 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <title>Panel de fichaje - Empleado</title>
-  <!-- Tailwind CDN para desarrollo rápido -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center">
   <div class="w-full max-w-3xl mx-auto p-4">
-    <!-- Tarjeta principal -->
     <div class="bg-white shadow-lg rounded-2xl p-6 border border-slate-200">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 class="text-2xl font-semibold text-slate-800">
             Panel de fichaje
           </h1>
-          <p class="text-slate-500 text-sm">
-            Marca aquí tus entradas, pausas y salidas de la jornada.
+          <p class="text-sm text-slate-500" id="userInfoText">
+            Cargando usuario...
           </p>
         </div>
-        <div class="text-right">
-          <div id="currentTime" class="text-3xl font-mono font-bold text-slate-900">
-            --:--:--
+        <div class="flex flex-col items-end gap-2">
+          <div>
+            <div id="currentTime" class="text-3xl font-mono font-bold text-slate-900">
+              --:--:--
+            </div>
+            <div id="currentDate" class="text-sm text-slate-500"></div>
           </div>
-          <div id="currentDate" class="text-sm text-slate-500"></div>
+          <button
+            id="btnLogout"
+            class="text-xs px-3 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+          >
+            Cerrar sesión
+          </button>
         </div>
       </div>
 
-      <!-- Estado actual -->
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-2">
           <span class="text-sm text-slate-500">Estado actual:</span>
@@ -40,7 +45,6 @@
         </div>
       </div>
 
-      <!-- Botones de acción -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <button
           id="btnClockIn"
@@ -84,7 +88,6 @@
         </button>
       </div>
 
-      <!-- Lista de fichajes de hoy -->
       <div>
         <h2 class="text-sm font-semibold text-slate-700 mb-3">
           Fichajes de hoy
@@ -99,17 +102,29 @@
   </div>
 
   <script>
-    const API_BASE_URL = 'http://localhost:3000/api';
+    const API_BASE_URL = '/api';
 
-    // ⚠️ Suponemos que ya tienes guardado el token de login en localStorage
-    // por ejemplo después de hacer el login en otra pantalla.
     function getToken() {
       return localStorage.getItem('authToken');
     }
 
+    function getUserInfo() {
+      const raw = localStorage.getItem('userInfo');
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
     function formatTime(dateStr) {
       const d = new Date(dateStr);
-      return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return d.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
     }
 
     function formatDate(date) {
@@ -121,7 +136,6 @@
       });
     }
 
-    // ⏰ Reloj en tiempo real
     function startClock() {
       const timeEl = document.getElementById('currentTime');
       const dateEl = document.getElementById('currentDate');
@@ -136,7 +150,6 @@
       setInterval(tick, 1000);
     }
 
-    // 🔁 Cargar fichajes de hoy
     async function loadTodayEvents() {
       const container = document.getElementById('eventsContainer');
       container.innerHTML = '<p class="text-slate-400 text-sm">Cargando...</p>';
@@ -174,7 +187,7 @@
               label = 'Entrada';
               break;
             case 'BREAK_START':
-              label = 'Inicio pausa';
+              label = ev.reason ? `Inicio pausa (${ev.reason})` : 'Inicio pausa';
               break;
             case 'BREAK_END':
               label = 'Fin pausa';
@@ -195,7 +208,6 @@
         container.innerHTML = '';
         container.appendChild(list);
 
-        // Actualizar estado según el último evento
         const last = events[events.length - 1];
         updateStatus(last);
       } catch (err) {
@@ -204,7 +216,6 @@
       }
     }
 
-    // 🧠 Estado visual según último evento
     function updateStatus(lastEvent) {
       const badge = document.getElementById('statusBadge');
       const lastActionEl = document.getElementById('lastAction');
@@ -254,7 +265,7 @@
           badge.textContent = 'Jornada finalizada';
           badge.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700';
 
-          btnClockIn.disabled = false; // si permites empezar otra jornada el mismo día
+          btnClockIn.disabled = false;
           btnClockOut.disabled = true;
           btnBreakStart.disabled = true;
           btnBreakEnd.disabled = true;
@@ -262,7 +273,6 @@
       }
     }
 
-    // 📡 Helpers para mandar eventos
     async function sendEvent(endpoint, extraBody = {}) {
       const res = await fetch(API_BASE_URL + endpoint, {
         method: 'POST',
@@ -279,16 +289,26 @@
         return;
       }
 
-      // tras registrar, recargamos los eventos
       await loadTodayEvents();
     }
 
-    // 🚀 Init
     document.addEventListener('DOMContentLoaded', () => {
-      if (!getToken()) {
-        alert('No hay token de sesión. Primero inicia sesión en la app.');
-        // aquí podrías redirigir a una página de login
+      const token = getToken();
+      const user = getUserInfo();
+
+      if (!token || !user) {
+        window.location.href = '/login.html';
+        return;
       }
+
+      document.getElementById('userInfoText').textContent =
+        `${user.fullName || user.email} · ${user.role}`;
+
+      document.getElementById('btnLogout').addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userInfo');
+        window.location.href = '/login.html';
+      });
 
       startClock();
       loadTodayEvents();
@@ -303,8 +323,6 @@
 
       document.getElementById('btnBreakStart').addEventListener('click', () => {
         const reason = document.getElementById('pauseReason').value || null;
-        // Si quieres guardar el motivo en AuditLog o en otra tabla,
-        // puedes enviarlo como meta aquí y usarlo en el backend.
         sendEvent('/time/break-start', { reason });
       });
 

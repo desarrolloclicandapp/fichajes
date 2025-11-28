@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin - Trabajadores</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen">
+  <div class="max-w-6xl mx-auto p-4 md:p-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-800">
+          Panel de empresa
+        </h1>
+        <p id="companyInfoText" class="text-sm text-slate-500">
+          Cargando empresa...
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a
+          href="/admin-reports.html"
+          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+        >
+          Ver reportes
+        </a>
+          <a
+    href="/admin-logs.html"
+    class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+  >
+    Ver logs
+  </a>
+        <button
+          id="btnLogout"
+          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+
+    <!-- Barra superior -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-800">Trabajadores</h2>
+        <p class="text-xs text-slate-500">
+          Gestiona los empleados, sus horarios y días de trabajo.
+        </p>
+      </div>
+      <button
+        id="btnNewWorker"
+        class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition"
+      >
+        + Nuevo trabajador
+      </button>
+    </div>
+
+    <!-- Tabla de trabajadores -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <span id="workersCountText">Cargando...</span>
+        </div>
+        <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer">
+          <input type="checkbox" id="chkShowInactive" class="rounded border-slate-300">
+          Mostrar inactivos
+        </label>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+            <tr>
+              <th class="px-4 py-2 text-left">Nombre</th>
+              <th class="px-4 py-2 text-left">Email</th>
+              <th class="px-4 py-2 text-left">Horario</th>
+              <th class="px-4 py-2 text-left">Días</th>
+              <th class="px-4 py-2 text-left">Estado</th>
+              <th class="px-4 py-2 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="workersTableBody" class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="6" class="px-4 py-4 text-center text-slate-400 text-sm">
+                Cargando trabajadores...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div
+      id="workerModal"
+      class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden"
+    >
+      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="workerModalTitle" class="text-lg font-semibold text-slate-800">
+            Nuevo trabajador
+          </h3>
+          <button
+            id="btnCloseModal"
+            class="text-slate-400 hover:text-slate-600 text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        <form id="workerForm" class="space-y-4">
+          <input type="hidden" id="workerId" />
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Nombre completo</label>
+              <input
+                id="workerFullName"
+                type="text"
+                class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Nombre y apellidos"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Email</label>
+              <input
+                id="workerEmail"
+                type="email"
+                class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="correo@empresa.com"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Hora inicio</label>
+              <input
+                id="workStartTime"
+                type="time"
+                class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Hora fin</label>
+              <input
+                id="workEndTime"
+                type="time"
+                class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Días de trabajo</label>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <!-- L M X J V S D -->
+              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
+                <input type="checkbox" class="dayCheck" data-day="L">
+                <span>L</span>
+              </label>
+              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
+                <input type="checkbox" class="dayCheck" data-day="M">
+                <span>M</span>
+              </label>
+              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
+                <input type="checkbox" class="dayCheck" data-day="X">
+                <span>X</span>
+              </label>
+              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
+                <input type="checkbox" class="dayCheck" data-day="J">
+                <span>J</span>
+              </label>
+              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
+                <input type="checkbox" class="dayCheck" data-day="V">
+                <span>V</span>
+              </label>
+              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
+                <input type="checkbox" class="dayCheck" data-day="S">
+                <span>S</span>
+              </label>
+              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
+                <input type="checkbox" class="dayCheck" data-day="D">
+                <span>D</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2 text-xs text-slate-600">
+              <input type="checkbox" id="workerIsActive" class="rounded border-slate-300" checked>
+              Trabajador activo
+            </label>
+            <span id="workerExtraInfo" class="text-[11px] text-slate-400"></span>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              id="btnCancelModal"
+              class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 border border-slate-300 hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = '/api';
+
+    function getToken() {
+      return localStorage.getItem('authToken');
+    }
+
+    function getUserInfo() {
+      const raw = localStorage.getItem('userInfo');
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function minutesToHHMM(minutes) {
+      if (minutes == null) return '';
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function hhmmToMinutes(hhmm) {
+      if (!hhmm) return null;
+      const [h, m] = hhmm.split(':').map(Number);
+      if (Number.isNaN(h) || Number.isNaN(m)) return null;
+      return h * 60 + m;
+    }
+
+    function workDaysStringFromChecks() {
+      const checks = document.querySelectorAll('.dayCheck');
+      const letters = [];
+      checks.forEach((chk) => {
+        if (chk.checked) letters.push(chk.dataset.day);
+      });
+      return letters.join('') || null;
+    }
+
+    function setChecksFromWorkDaysString(str) {
+      const checks = document.querySelectorAll('.dayCheck');
+      checks.forEach((chk) => {
+        chk.checked = !!str && str.includes(chk.dataset.day);
+      });
+    }
+
+    async function loadWorkers() {
+      const tbody = document.getElementById('workersTableBody');
+      const showInactive = document.getElementById('chkShowInactive').checked;
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="px-4 py-4 text-center text-slate-400 text-sm">
+            Cargando trabajadores...
+          </td>
+        </tr>
+      `;
+
+      try {
+        const res = await fetch(
+          API_BASE_URL + '/admin/workers' + (showInactive ? '?includeInactive=true' : ''),
+          {
+            headers: { Authorization: 'Bearer ' + getToken() },
+          }
+        );
+
+        if (!res.ok) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="px-4 py-4 text-center text-rose-500 text-sm">
+                Error al cargar trabajadores.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        const workers = await res.json();
+
+        document.getElementById('workersCountText').textContent =
+          workers.length === 0
+            ? 'Sin trabajadores.'
+            : workers.length === 1
+            ? '1 trabajador.'
+            : `${workers.length} trabajadores.`;
+
+        if (!workers.length) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="px-4 py-4 text-center text-slate-400 text-sm">
+                No hay trabajadores.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = '';
+        workers.forEach((w) => {
+          const tr = document.createElement('tr');
+          tr.className = w.isActive ? 'hover:bg-slate-50' : 'bg-slate-50 text-slate-400';
+
+          const horario =
+            minutesToHHMM(w.workStartMinutes) && minutesToHHMM(w.workEndMinutes)
+              ? `${minutesToHHMM(w.workStartMinutes)} - ${minutesToHHMM(w.workEndMinutes)}`
+              : 'Sin horario';
+
+          tr.innerHTML = `
+            <td class="px-4 py-2 whitespace-nowrap">${w.fullName || '-'}</td>
+            <td class="px-4 py-2 whitespace-nowrap">${w.email}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-xs text-slate-600">${horario}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-xs text-slate-600">${w.workDays || '-'}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-xs">
+              ${
+                w.isActive
+                  ? '<span class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium">Activo</span>'
+                  : '<span class="px-2 py-1 rounded-full bg-slate-100 text-slate-500 font-medium">Inactivo</span>'
+              }
+            </td>
+            <td class="px-4 py-2 text-right text-xs">
+              <button class="btnEditWorker px-2 py-1 rounded-lg border border-slate-300 hover:bg-slate-50" data-id="${
+                w.id
+              }">
+                Editar
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.querySelectorAll('.btnEditWorker').forEach((btn) => {
+          btn.addEventListener('click', () => openWorkerModal(btn.dataset.id));
+        });
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="px-4 py-4 text-center text-rose-500 text-sm">
+              Error al conectar con el servidor.
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function openWorkerModal(workerId = null) {
+      const modal = document.getElementById('workerModal');
+      const title = document.getElementById('workerModalTitle');
+      const extraInfo = document.getElementById('workerExtraInfo');
+
+      document.getElementById('workerForm').reset();
+      setChecksFromWorkDaysString(null);
+      document.getElementById('workerId').value = workerId || '';
+      extraInfo.textContent = '';
+      document.getElementById('workerIsActive').checked = true;
+      document.getElementById('workerEmail').disabled = !!workerId; // no cambiar email al editar
+
+      if (!workerId) {
+        title.textContent = 'Nuevo trabajador';
+        modal.classList.remove('hidden');
+        return;
+      }
+
+      // editar
+      title.textContent = 'Editar trabajador';
+      modal.classList.remove('hidden');
+
+      // cargar datos
+      fetch(API_BASE_URL + '/admin/workers/' + workerId, {
+        headers: { Authorization: 'Bearer ' + getToken() },
+      })
+        .then((res) => res.json())
+        .then((w) => {
+          document.getElementById('workerFullName').value = w.fullName || '';
+          document.getElementById('workerEmail').value = w.email;
+          document.getElementById('workStartTime').value = minutesToHHMM(w.workStartMinutes);
+          document.getElementById('workEndTime').value = minutesToHHMM(w.workEndMinutes);
+          setChecksFromWorkDaysString(w.workDays || '');
+          document.getElementById('workerIsActive').checked = w.isActive;
+        })
+        .catch((err) => {
+          console.error(err);
+          extraInfo.textContent = 'Error al cargar datos del trabajador.';
+        });
+    }
+
+    function closeWorkerModal() {
+      const modal = document.getElementById('workerModal');
+      modal.classList.add('hidden');
+    }
+
+    async function saveWorker(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('workerId').value || null;
+      const fullName = document.getElementById('workerFullName').value || null;
+      const email = document.getElementById('workerEmail').value;
+      const startTime = document.getElementById('workStartTime').value;
+      const endTime = document.getElementById('workEndTime').value;
+      const workDays = workDaysStringFromChecks();
+      const isActive = document.getElementById('workerIsActive').checked;
+
+      if (!email) {
+        alert('El email es obligatorio.');
+        return;
+      }
+
+      const payload = {
+        fullName,
+        workStartMinutes: hhmmToMinutes(startTime),
+        workEndMinutes: hhmmToMinutes(endTime),
+        workDays,
+        isActive,
+      };
+
+      let url = API_BASE_URL + '/admin/workers';
+      let method = 'POST';
+
+      if (id) {
+        url = API_BASE_URL + '/admin/workers/' + id;
+        method = 'PUT';
+        payload.email = undefined; // email no se actualiza
+      } else {
+        payload.email = email;
+      }
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + getToken(),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          alert(data.message || 'Error al guardar trabajador');
+          return;
+        }
+
+        closeWorkerModal();
+        await loadWorkers();
+      } catch (err) {
+        console.error(err);
+        alert('Error de conexión al guardar trabajador');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = getUserInfo();
+      if (!getToken() || !user || (user.role !== 'CLIENT_ADMIN' && user.role !== 'SUPER_ADMIN')) {
+        window.location.href = '/login.html';
+        return;
+      }
+
+      const companyText = document.getElementById('companyInfoText');
+      companyText.textContent =
+        (user.companyName || 'Empresa sin nombre') + ' · ' + user.role;
+
+      document.getElementById('btnLogout').addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userInfo');
+        window.location.href = '/login.html';
+      });
+
+      document.getElementById('btnNewWorker').addEventListener('click', () =>
+        openWorkerModal(null),
+      );
+      document.getElementById('btnCloseModal').addEventListener('click', closeWorkerModal);
+      document.getElementById('btnCancelModal').addEventListener('click', closeWorkerModal);
+      document
+        .getElementById('workerForm')
+        .addEventListener('submit', saveWorker);
+
+      document
+        .getElementById('chkShowInactive')
+        .addEventListener('change', loadWorkers);
+
+      loadWorkers();
+    });
+  </script>
+</body>
+</html>

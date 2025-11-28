@@ -49,6 +49,7 @@ model Company {
   dailySummaries   TimeDailySummary[]
   absenceRequests  AbsenceRequest[]
   auditLogs        AuditLog[]
+  holidays         CompanyHoliday[]
 }
 
 model User {
@@ -63,6 +64,7 @@ model User {
   // NUEVOS CAMPOS
   workStartMinutes Int?  // minutos desde 00:00, ej: 9*60 = 540 → 09:00
   workEndMinutes   Int?  // minutos desde 00:00, ej: 17*60 = 1020 → 17:00
+  workDays         String?
   company   Company? @relation(fields: [companyId], references: [id])
   companyId String?
 
@@ -135,4 +137,17 @@ model AuditLog {
 
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
+}
+
+model CompanyHoliday {
+  id        String   @id @default(uuid())
+  date      DateTime
+  name      String
+  isPaid    Boolean  @default(true) // opcional: festivo retribuido o no
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId String
+
+  createdAt DateTime @default(now())
+  @@unique([companyId, date])
+  
 }

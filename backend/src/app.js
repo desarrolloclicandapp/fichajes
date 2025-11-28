@@ -1,32 +1,46 @@
+// backend/src/app.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+
 const env = require('./config/env');
 
+// Rutas módulos
 const authRoutes = require('./modules/auth/auth.routes');
 const timeRoutes = require('./modules/time/time.routes');
+
+// 🆕 módulos admin
+const adminWorkersRoutes = require('./modules/admin/workers/workers.routes');
+const adminReportsRoutes = require('./modules/admin/reports/reports.routes');
+const adminLogsRoutes = require('./modules/admin/logs/logs.routes');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+// servir frontend estático
 app.use(express.static(path.join(__dirname, '..', '..', 'frontend', 'public')));
 
+// healthcheck
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', env: env.NODE_ENV });
 });
 
+// Rutas API
 app.use('/api/auth', authRoutes);
 app.use('/api/time', timeRoutes);
 
+// 🆕 rutas admin
+app.use('/api/admin/workers', adminWorkersRoutes);
+app.use('/api/admin/reports', adminReportsRoutes);
+app.use('/api/admin/workers', adminWorkersRoutes);
+app.use('/api/admin/reports', adminReportsRoutes);
+app.use('/api/admin/logs', adminLogsRoutes);
+
+// 404 por defecto
 app.use((req, res) => {
   res.status(404).json({ message: 'Ruta no encontrada' });
-});
-
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ message: 'Error interno del servidor' });
 });
 
 app.listen(env.PORT, () => {

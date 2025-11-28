@@ -14,7 +14,15 @@ async function login({ email, password }) {
   const m = minutes % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
-
+// si el usuario tiene empresa y no es SUPER_ADMIN, revisar estado de la empresa
+if (user.company && user.role !== 'SUPER_ADMIN') {
+  if (!user.company.isActive) {
+    throw {
+      status: 403,
+      message: 'La empresa está desactivada. Contacte con el administrador del sistema.',
+    };
+  }
+}
 
   if (!user || !user.isActive) {
     throw { status: 401, message: 'Credenciales inválidas' };

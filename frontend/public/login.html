@@ -79,18 +79,21 @@
           }
 
          // Guardamos token y datos de usuario
+// Guardamos token y datos de usuario
 localStorage.setItem('authToken', data.token);
 localStorage.setItem('userInfo', JSON.stringify(data.user));
 
 // Redirigir según rol
 if (data.user.role === 'WORKER') {
   window.location.href = '/worker-dashboard.html';
-} else if (data.user.role === 'CLIENT_ADMIN' || data.user.role === 'SUPER_ADMIN') {
+} else if (data.user.role === 'CLIENT_ADMIN') {
   window.location.href = '/admin-workers.html';
+} else if (data.user.role === 'SUPER_ADMIN') {
+  window.location.href = '/super-companies.html';
 } else {
-  // fallback
   window.location.href = '/worker-dashboard.html';
 }
+
 } catch (err) {
           console.error(err);
           errorMsg.textContent = 'No se pudo conectar con el servidor';

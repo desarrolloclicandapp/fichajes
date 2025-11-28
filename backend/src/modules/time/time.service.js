@@ -116,6 +116,17 @@ function validateNewEvent(type, todaysEvents) {
 }
 
 async function registerEvent({ userId, companyId, type, reason }) {
+  const company = await prisma.company.findUnique({
+  where: { id: companyId },
+});
+
+if (!company || !company.isActive) {
+  throw {
+    status: 403,
+    message: 'La empresa está desactivada. No se pueden registrar fichajes.',
+  };
+}
+
   if (!companyId) {
     throw { status: 400, message: 'El usuario no está asociado a una empresa.' };
   }

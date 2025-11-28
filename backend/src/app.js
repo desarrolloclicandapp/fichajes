@@ -13,6 +13,8 @@ const timeRoutes = require('./modules/time/time.routes');
 const adminWorkersRoutes = require('./modules/admin/workers/workers.routes');
 const adminReportsRoutes = require('./modules/admin/reports/reports.routes');
 const adminLogsRoutes = require('./modules/admin/logs/logs.routes');
+//super
+const superCompaniesRoutes = require('./modules/super/companies/companies.routes');
 
 const app = express();
 
@@ -34,10 +36,9 @@ app.use('/api/time', timeRoutes);
 // 🆕 rutas admin
 app.use('/api/admin/workers', adminWorkersRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
-app.use('/api/admin/workers', adminWorkersRoutes);
-app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/logs', adminLogsRoutes);
-
+//super
+app.use('/api/super/companies', superCompaniesRoutes);
 // 404 por defecto
 app.use((req, res) => {
   res.status(404).json({ message: 'Ruta no encontrada' });

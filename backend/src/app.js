@@ -13,8 +13,6 @@ const timeRoutes = require('./modules/time/time.routes');
 const adminWorkersRoutes = require('./modules/admin/workers/workers.routes');
 const adminReportsRoutes = require('./modules/admin/reports/reports.routes');
 const adminLogsRoutes = require('./modules/admin/logs/logs.routes');
-// [new line]
-const adminAbsencesRoutes = require('./modules/admin/absences/absences.routes'); 
 //super
 const superCompaniesRoutes = require('./modules/super/companies/companies.routes');
 const absencesRoutes = require('./modules/absences/absences.routes');
@@ -26,6 +24,11 @@ app.use(express.json());
 
 // servir frontend estático
 app.use(express.static(path.join(__dirname, '..', '..', 'frontend', 'public')));
+
+// 🆕 RUTA RAÍZ: Redirigir a login.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', '..', 'frontend', 'public', 'login.html'));
+});
 
 // healthcheck
 app.get('/api/health', (req, res) => {
@@ -42,8 +45,6 @@ app.use('/api/time', timeRoutes);
 app.use('/api/admin/workers', adminWorkersRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/logs', adminLogsRoutes);
-// [new line]
-app.use('/api/admin/absences', adminAbsencesRoutes); 
 //super
 app.use('/api/super/companies', superCompaniesRoutes);
 // 404 por defecto

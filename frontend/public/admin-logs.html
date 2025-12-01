@@ -7,7 +7,6 @@
 </head>
 <body class="bg-slate-100 min-h-screen">
   <div class="max-w-6xl mx-auto p-4 md:p-6">
-    <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
       <div>
         <h1 class="text-2xl font-semibold text-slate-800">
@@ -33,9 +32,20 @@
       </div>
     </div>
 
-    <!-- Filtros -->
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 mb-4">
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+        
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Tipo de Log</label>
+          <select
+            id="selectLogType"
+            class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="time-events">Fichajes (Eventos de Tiempo)</option>
+            <option value="absences">Ausencias (Solicitudes)</option>
+          </select>
+        </div>
+        
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Desde</label>
           <input
@@ -44,6 +54,7 @@
             class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
+        
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Hasta</label>
           <input
@@ -52,6 +63,7 @@
             class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
+        
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Trabajador</label>
           <select
@@ -61,23 +73,20 @@
             <option value="">Todos</option>
           </select>
         </div>
+        
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Acción</label>
+          <label id="actionLabel" class="block text-xs font-medium text-slate-600 mb-1">Acción</label>
           <select
-            id="selectType"
+            id="selectAction"
             class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
-            <option value="">Todas</option>
-            <option value="CLOCK_IN">Entrada</option>
-            <option value="BREAK_START">Inicio pausa</option>
-            <option value="BREAK_END">Fin pausa</option>
-            <option value="CLOCK_OUT">Salida</option>
-          </select>
+            </select>
         </div>
+        
         <div class="flex gap-2">
           <button
             id="btnLoadLogs"
-            class="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+            class="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 h-10 mt-auto"
           >
             Buscar
           </button>
@@ -85,7 +94,6 @@
       </div>
     </div>
 
-    <!-- Tabla -->
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
       <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
         <div class="text-xs text-slate-500" id="logsCountText">
@@ -95,14 +103,7 @@
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 text-xs uppercase text-slate-500">
-            <tr>
-              <th class="px-4 py-2 text-left">Fecha</th>
-              <th class="px-4 py-2 text-left">Hora</th>
-              <th class="px-4 py-2 text-left">Trabajador</th>
-              <th class="px-4 py-2 text-left">Email</th>
-              <th class="px-4 py-2 text-left">Acción</th>
-              <th class="px-4 py-2 text-left">Motivo</th>
-            </tr>
+            <tr></tr> 
           </thead>
           <tbody id="logsTableBody" class="divide-y divide-slate-100">
             <tr>
@@ -118,6 +119,48 @@
 
   <script>
     const API_BASE_URL = '/api';
+
+    // Mapeos de roles y tipos
+    const ROLE_MAP = {
+      'WORKER': 'Trabajador',
+      'CLIENT_ADMIN': 'Admin Empresa',
+      'SUPER_ADMIN': 'Super Admin'
+    };
+
+    const ABSENCE_TYPES_MAP_LOGS = {
+      'ABSENCE_REQUESTED': 'Solicitada',
+      'ABSENCE_APPROVED': 'Aprobada',
+      'ABSENCE_REJECTED': 'Rechazada',
+    };
+    
+    const TIME_TYPES_MAP = {
+        'CLOCK_IN': 'Entrada',
+        'BREAK_START': 'Inicio pausa',
+        'BREAK_END': 'Fin pausa',
+        'CLOCK_OUT': 'Salida',
+    };
+    
+    // Mapeo detallado de tipos de ausencia (VACATION, SICK_LEAVE, etc.)
+    const ABSENCE_DETAIL_MAP = {
+        'VACATION': 'Vacaciones',
+        'SICK_LEAVE': 'Baja Médica',
+        'PAID_LEAVE': 'Permiso Retribuido',
+        'UNPAID_LEAVE': 'Permiso Sin Sueldo',
+        'JUSTIFIED_OTHER': 'Otra Justificada',
+        'UNJUSTIFIED': 'No Justificada',
+    };
+    
+    // Mapeo de ESTADOS (para el badge final)
+    const ABSENCE_STATUS_MAP = {
+        'PENDING': 'Pendiente',
+        'APPROVED': 'Aprobada',
+        'REJECTED': 'Rechazada',
+    };
+    
+    function mapTypeLabel(type) {
+        return ABSENCE_DETAIL_MAP[type] || type;
+    }
+
 
     function getToken() {
       return localStorage.getItem('authToken');
@@ -164,12 +207,71 @@
       }
     }
 
+    // Función para renderizar el filtro de Acción/Estado
+    function renderActionFilter(logType) {
+        const select = document.getElementById('selectAction');
+        const label = document.getElementById('actionLabel');
+        select.innerHTML = '';
+
+        let options = [{ value: '', text: 'Todas' }];
+        
+        if (logType === 'time-events') {
+            label.textContent = 'Acción (Fichaje)';
+            options.push(
+                { value: 'CLOCK_IN', text: 'Entrada' },
+                { value: 'BREAK_START', text: 'Inicio pausa' },
+                { value: 'BREAK_END', text: 'Fin pausa' },
+                { value: 'CLOCK_OUT', text: 'Salida' }
+            );
+        } else {
+            label.textContent = 'Estado (Ausencia)';
+            options.push(
+                { value: 'PENDING', text: 'Pendiente' },
+                { value: 'APPROVED', text: 'Aprobada' },
+                { value: 'REJECTED', text: 'Rechazada' }
+            );
+        }
+        
+        options.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt.value;
+            el.textContent = opt.text;
+            select.appendChild(el);
+        });
+    }
+
+    // Función para renderizar el encabezado de la tabla
+    function renderTableHead(logType) {
+        const tableHead = document.querySelector('.min-w-full thead tr');
+        
+        if (logType === 'time-events') {
+             tableHead.innerHTML = `
+                <th class="px-4 py-2 text-left">Fecha</th>
+                <th class="px-4 py-2 text-left">Hora</th>
+                <th class="px-4 py-2 text-left">Trabajador</th>
+                <th class="px-4 py-2 text-left">Email</th>
+                <th class="px-4 py-2 text-left">Acción</th>
+                <th class="px-4 py-2 text-left">Motivo</th>
+            `;
+        } else {
+            tableHead.innerHTML = `
+                <th class="px-4 py-2 text-left">Fecha/Hora</th>
+                <th class="px-4 py-2 text-left">Trabajador</th>
+                <th class="px-4 py-2 text-left">Acción</th>
+                <th class="px-4 py-2 text-left">Detalles de Ausencia</th>
+                <th class="px-4 py-2 text-left">Estado</th>
+                <th class="px-4 py-2 text-left"></th>
+            `;
+        }
+    }
+
     async function loadLogs() {
       const tbody = document.getElementById('logsTableBody');
       const from = document.getElementById('inputFrom').value;
       const to = document.getElementById('inputTo').value;
       const userId = document.getElementById('selectUser').value;
-      const type = document.getElementById('selectType').value;
+      const logType = document.getElementById('selectLogType').value;
+      const actionValue = document.getElementById('selectAction').value; // Usamos este para type o status
       const countText = document.getElementById('logsCountText');
 
       if (!from || !to) {
@@ -177,6 +279,9 @@
         return;
       }
 
+      // 1. Renderizar la tabla para el tipo de log
+      renderTableHead(logType);
+      
       tbody.innerHTML = `
         <tr>
           <td colspan="6" class="px-4 py-4 text-center text-slate-400 text-sm">
@@ -188,11 +293,18 @@
 
       const params = new URLSearchParams({ from, to });
       if (userId) params.set('userId', userId);
-      if (type) params.set('type', type);
+      
+      // Determinar qué parámetro usar (type para fichajes, status para ausencias)
+      if (actionValue) {
+          const actionParamName = logType === 'time-events' ? 'type' : 'status';
+          params.set(actionParamName, actionValue);
+      }
+      
+      const endpoint = API_BASE_URL + '/admin/logs/' + logType;
 
       try {
         const res = await fetch(
-          API_BASE_URL + '/admin/logs/time-events?' + params.toString(),
+          endpoint + '?' + params.toString(),
           {
             headers: { Authorization: 'Bearer ' + getToken() },
           }
@@ -227,32 +339,63 @@
         tbody.innerHTML = '';
         events.forEach((ev) => {
           const { date, time } = formatDateTime(ev.timestamp);
-          let label = ev.type;
-          switch (ev.type) {
-            case 'CLOCK_IN':
-              label = 'Entrada';
-              break;
-            case 'BREAK_START':
-              label = 'Inicio pausa';
-              break;
-            case 'BREAK_END':
-              label = 'Fin pausa';
-              break;
-            case 'CLOCK_OUT':
-              label = 'Salida';
-              break;
-          }
-
           const tr = document.createElement('tr');
           tr.className = 'hover:bg-slate-50';
-          tr.innerHTML = `
-            <td class="px-4 py-2 whitespace-nowrap">${date}</td>
-            <td class="px-4 py-2 whitespace-nowrap">${time}</td>
-            <td class="px-4 py-2 whitespace-nowrap">${ev.user?.fullName || '-'}</td>
-            <td class="px-4 py-2 whitespace-nowrap">${ev.user?.email || '-'}</td>
-            <td class="px-4 py-2 whitespace-nowrap">${label}</td>
-            <td class="px-4 py-2 whitespace-nowrap">${ev.reason || ''}</td>
-          `;
+          
+          if (logType === 'time-events') {
+              // Lógica de Fichajes
+              const label = TIME_TYPES_MAP[ev.type] || ev.type;
+              
+              tr.innerHTML = `
+                <td class="px-4 py-2 whitespace-nowrap">${date}</td>
+                <td class="px-4 py-2 whitespace-nowrap">${time}</td>
+                <td class="px-4 py-2 whitespace-nowrap">${ev.user?.fullName || '-'}</td>
+                <td class="px-4 py-2 whitespace-nowrap">${ev.user?.email || '-'}</td>
+                <td class="px-4 py-2 whitespace-nowrap">${label}</td>
+                <td class="px-4 py-2 whitespace-nowrap">${ev.reason || ''}</td>
+              `;
+          } else {
+              // Lógica de Logs de Ausencias
+              const actionLabel = ABSENCE_TYPES_MAP_LOGS[ev.type] || ev.type;
+              const statusBadge = ev.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' : 
+                                  ev.status === 'REJECTED' ? 'bg-rose-100 text-rose-700' : 
+                                  'bg-amber-100 text-amber-700';
+              
+              // Traducción del detalle de Ausencia
+              let detailsText = ev.details;
+              if (detailsText) {
+                  // 1. Reemplazar códigos de tipo de ausencia (VACATION, SICK_LEAVE, etc.)
+                  Object.keys(ABSENCE_DETAIL_MAP).forEach(typeCode => {
+                      const regex = new RegExp(`\\b${typeCode}\\b`, 'g');
+                      detailsText = detailsText.replace(regex, mapTypeLabel(typeCode));
+                  });
+                  
+                  // 2. 🆕 Traducir palabras de estado y administración
+                  // **ESTAS SON LAS TRADUCCIONES PARA EL DETALLE**
+                  detailsText = detailsText.replace('Decisión: APPROVED', 'Decisión: APROBADA');
+                  detailsText = detailsText.replace('Decisión: REJECTED', 'Decisión: RECHAZADA');
+                  detailsText = detailsText.replace('Admin: ', 'Administrador: '); // Traduce "Admin:"
+                  detailsText = detailsText.replace(/Tipo final: N\/A/g, 'Tipo final: No Aplica');
+              }
+              
+              // 3. Obtener el estado final traducido para el badge
+              const translatedStatus = ABSENCE_STATUS_MAP[ev.status] || ev.status;
+
+
+              tr.innerHTML = `
+                <td class="px-4 py-2 whitespace-nowrap">${date} ${time}</td>
+                <td class="px-4 py-2 whitespace-nowrap">${ev.user?.fullName || '-'}</td>
+                <td class="px-4 py-2 whitespace-nowrap font-medium text-slate-700">${actionLabel}</td>
+                <td class="px-4 py-2 text-xs max-w-lg truncate">${detailsText}</td>
+                <td class="px-4 py-2 whitespace-nowrap">
+                    <span class="px-2 py-1 rounded-full text-xs font-medium ${statusBadge}">
+                        ${translatedStatus}
+                    </span>
+                </td>
+                <td class="px-4 py-2 whitespace-nowrap"></td>
+              `;
+          }
+          
           tbody.appendChild(tr);
         });
 
@@ -285,8 +428,10 @@
         return;
       }
 
+      // Visualización del Rol traducido
+      const userRole = ROLE_MAP[user.role] || user.role;
       document.getElementById('companyInfoText').textContent =
-        (user.companyName || 'Empresa sin nombre') + ' · ' + user.role;
+        (user.companyName || 'Empresa sin nombre') + ' · ' + userRole;
 
       document.getElementById('btnLogout').addEventListener('click', () => {
         localStorage.removeItem('authToken');
@@ -302,8 +447,20 @@
       document.getElementById('inputFrom').value = formatDateForInput(fromDate);
       document.getElementById('inputTo').value = formatDateForInput(today);
 
+      // Inicialización de filtros y eventos
+      const selectLogType = document.getElementById('selectLogType');
+      const selectAction = document.getElementById('selectAction');
+      
+      selectLogType.addEventListener('change', () => {
+        renderActionFilter(selectLogType.value);
+        loadLogs();
+      });
+      selectAction.addEventListener('change', loadLogs);
+      
       document.getElementById('btnLoadLogs').addEventListener('click', loadLogs);
 
+      // Inicializa el filtro de Acción/Estado por defecto (time-events)
+      renderActionFilter(selectLogType.value); 
       loadWorkersForFilter();
     });
   </script>

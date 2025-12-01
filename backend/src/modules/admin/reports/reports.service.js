@@ -98,7 +98,34 @@ async function getCompanySummary({ requester, fromStr, toStr }) {
     orderBy: [{ userId: 'asc' }, { timestamp: 'asc' }],
   });
 
-  // 3. agrupar por userId y fecha
+  // 🆕 3. Ausencias Aprobadas en el rango del reporte
+  const approvedAbsences = await prisma.absenceRequest.findMany({
+    where: {
+      companyId,
+      userId: { in: userIds },
+      status: 'APPROVED',
+      // Buscar ausencias que tengan al menos 1 día de solapamiento con el rango del reporte
+      startDate: { lte: to }, 
+      endDate: { gte: from }, 
+    },
+    select: {
+        id: true,
+        userId: true,
+        requestedType: true,
+        finalType: true,
+        startDate: true,
+        endDate: true,
+        reason: true,
+    },
+  });
+  
+  const absencesByUser = approvedAbsences.reduce((acc, abs) => {
+    if (!acc[abs.userId]) acc[abs.userId] = [];
+    acc[abs.userId].push(abs);
+    return acc;
+  }, {});
+
+  // 4. agrupar eventos por userId y fecha
   const byUser = {};
   for (const ev of events) {
     if (!byUser[ev.userId]) byUser[ev.userId] = {};
@@ -112,9 +139,12 @@ async function getCompanySummary({ requester, fromStr, toStr }) {
 
   for (const user of users) {
     const dayMap = byUser[user.id] || {};
+    
+    // *** CORRECCIÓN: INICIALIZAR LAS VARIABLES A 0 AQUÍ ***
     let totalWorkedSeconds = 0;
     let totalPauseSeconds = 0;
     let daysCount = 0;
+    // *******************************************************
 
     for (const [date, dayEvents] of Object.entries(dayMap)) {
       if (!dayEvents.length) continue;
@@ -144,6 +174,8 @@ async function getCompanySummary({ requester, fromStr, toStr }) {
       totalPauseSeconds += pauseSeconds;
       daysCount += 1;
     }
+    
+    const userAbsences = absencesByUser[user.id] || []; // 🆕 Ausencias de este trabajador
 
     resultWorkers.push({
       userId: user.id,
@@ -155,6 +187,16 @@ async function getCompanySummary({ requester, fromStr, toStr }) {
       totalWorkedFormatted: formatSecondsAsHHMMSS(totalWorkedSeconds),
       totalPauseSeconds,
       totalPauseFormatted: formatSecondsAsHHMMSS(totalPauseSeconds),
+      
+      // 🆕 Añadir ausencias aprobadas al resumen
+      absences: userAbsences.map(abs => ({
+        id: abs.id,
+        requestedType: abs.requestedType,
+        finalType: abs.finalType,
+        startDate: abs.startDate.toISOString().slice(0, 10),
+        endDate: abs.endDate.toISOString().slice(0, 10),
+        reason: abs.reason,
+      })),
     });
   }
 
@@ -173,15 +215,23 @@ async function getCompanySummaryCsv(args) {
     'Días con jornada completa',
     'Horas trabajadas',
     'Horas en pausa',
+    // 🆕 Nueva columna
+    'Ausencias Aprobadas', 
   ];
 
-  const rows = json.workers.map((w) => [
-    w.fullName || '',
-    w.email || '',
-    String(w.daysCount),
-    w.totalWorkedFormatted,
-    w.totalPauseFormatted,
-  ]);
+  const rows = json.workers.map((w) => {
+      // 🆕 Resumen de ausencias aprobadas para el CSV
+      const absenceSummary = w.absences.map(a => `${a.finalType || a.requestedType} (${a.startDate} a ${a.endDate})`).join('; ');
+      
+      return [
+        w.fullName || '',
+        w.email || '',
+        String(w.daysCount),
+        w.totalWorkedFormatted,
+        w.totalPauseFormatted,
+        absenceSummary, // 🆕 Nueva columna
+      ];
+  });
 
   const all = [header, ...rows];
   const csv = all.map((row) => row.map((v) => `"${(v || '').replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -280,8 +330,5 @@ async function getWorkerDaily({ requester, fromStr, toStr, workerId }) {
 module.exports = {
   getCompanySummary,
   getCompanySummaryCsv,
-  getWorkerDaily,          // <-- añade esta línea al export
+  getWorkerDaily,          
 };
-
-
-

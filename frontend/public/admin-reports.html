@@ -8,7 +8,6 @@
   </head>
   <body class="bg-slate-100 min-h-screen">
     <div class="max-w-5xl mx-auto p-4 md:p-6">
-      <!-- Header -->
       <div
         class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
       >
@@ -28,6 +27,12 @@
             Volver a trabajadores
           </a>
           <a
+            href="/admin-absences.html"
+            class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+          >
+            Gestionar ausencias
+          </a>
+          <a
             href="/admin-logs.html"
             class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
           >
@@ -42,7 +47,6 @@
         </div>
       </div>
 
-      <!-- Filtros -->
       <div
         class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 mb-4"
       >
@@ -82,11 +86,9 @@
         </div>
       </div>
 
-      <!-- Tabla + modal -->
       <div
         class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
       >
-        <!-- Modal detalle diario (solo visual) -->
         <div
           id="dailyModal"
           class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden"
@@ -137,7 +139,6 @@
           </div>
         </div>
 
-        <!-- Header de la tabla -->
         <div
           class="px-4 py-3 border-b border-slate-200 flex items-center justify-between"
         >
@@ -158,7 +159,6 @@
           </button>
         </div>
 
-        <!-- Tabla principal -->
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead class="bg-slate-50 text-xs uppercase text-slate-500">
@@ -188,6 +188,20 @@
     <script>
       const API_BASE_URL = "/api";
       let reportData = []; // resumen por trabajador (último reporte cargado)
+
+      // 🆕 Mapeo de tipos de ausencia para el PDF
+      const ABSENCE_TYPES = {
+        VACATION: "Vacaciones",
+        SICK_LEAVE: "Baja médica",
+        PAID_LEAVE: "Permiso retribuido",
+        UNPAID_LEAVE: "Permiso sin sueldo",
+        JUSTIFIED_OTHER: "Otra justificada",
+        UNJUSTIFIED: "No justificada",
+      };
+
+      function mapAbsenceTypeLabel(type) {
+        return ABSENCE_TYPES[type] || type;
+      }
 
       function getToken() {
         return localStorage.getItem("authToken");
@@ -249,9 +263,15 @@
           tr.innerHTML = `
             <td class="px-4 py-2 whitespace-nowrap">${w.fullName || "-"}</td>
             <td class="px-4 py-2 whitespace-nowrap">${w.email || "-"}</td>
-            <td class="px-4 py-2 whitespace-nowrap text-right">${w.daysCount}</td>
-            <td class="px-4 py-2 whitespace-nowrap text-right">${w.totalWorkedFormatted}</td>
-            <td class="px-4 py-2 whitespace-nowrap text-right">${w.totalPauseFormatted}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-right">${
+              w.daysCount
+            }</td>
+            <td class="px-4 py-2 whitespace-nowrap text-right">${
+              w.totalWorkedFormatted
+            }</td>
+            <td class="px-4 py-2 whitespace-nowrap text-right">${
+              w.totalPauseFormatted
+            }</td>
           `;
           tbody.appendChild(tr);
         });
@@ -322,7 +342,7 @@
 
           const data = await res.json();
           const workers = data.workers || [];
-          reportData = workers;
+          reportData = workers; // Guardamos todos los datos, incluyendo w.absences
 
           if (!workers.length) {
             renderReportTable([]);
@@ -361,7 +381,21 @@
       }
 
       // Exportar PDF RESUMEN (usa lo que hay en la tabla / filtro)
-      function exportToPdf() {
+      // frontend/public/admin-reports.html
+
+      // ... (añade este helper de mapeo necesario)
+      function mapDayShort(isoDateStr) {
+        const d = new Date(isoDateStr + "T00:00:00");
+        return d.toLocaleDateString("es-ES", {
+          weekday: "short",
+          month: "2-digit",
+          day: "2-digit",
+        });
+      }
+
+      // Exportar PDF RESUMEN (usa lo que hay en la tabla / filtro)
+      async function exportToPdf() {
+        // Nota: Cambiado a async para poder hacer la llamada fetch
         const { jsPDF } = window.jspdf;
 
         if (!reportData.length) {
@@ -374,10 +408,19 @@
         const filter = document.getElementById("filterWorker");
         const selectedId = filter?.value || "";
 
-        // aplicamos el mismo filtro que en pantalla
-        const workers = selectedId
-          ? reportData.filter((w) => w.userId === selectedId)
-          : reportData;
+        // ----------------------------------------------------
+        // LOGICA DE CONMUTACIÓN DE REPORTES
+        // ----------------------------------------------------
+
+        if (selectedId) {
+          // Caso 1: Reporte Detallado por Trabajador Único
+          const workerName = filter.options[filter.selectedIndex].textContent;
+          await generateDetailedPdf(jsPDF, selectedId, workerName, from, to);
+          return;
+        }
+
+        // Caso 2: Reporte Resumen General (Lógica existente y mejorada)
+        const workers = reportData;
 
         if (!workers.length) {
           alert("No hay datos para exportar con el filtro actual.");
@@ -386,6 +429,9 @@
 
         const doc = new jsPDF();
 
+        // ----------------------------------------------------
+        // PARTE 1: RESUMEN DE HORAS (Lógica actual)
+        // ----------------------------------------------------
         doc.setFontSize(16);
         doc.text("Reporte de fichajes (resumen)", 10, 15);
 
@@ -394,20 +440,24 @@
 
         let y = 30;
 
-        // encabezados
+        // 1. Resumen de Horas
+        doc.setFontSize(10);
+        doc.text("1. Resumen de Horas de Fichaje", 10, y);
+        y += 7;
+
+        // encabezados de la tabla de horas
         doc.setFontSize(9);
         doc.text("Trabajador", 10, y);
         doc.text("Días", 90, y);
         doc.text("Trabajadas", 120, y);
         doc.text("Pausas", 160, y);
-
         y += 6;
 
         workers.forEach((w) => {
           const name = w.fullName || w.email || "Sin nombre";
           const dias = String(w.daysCount || 0);
-          const trabajadas = w.totalWorkedFormatted || "00:00";
-          const pausas = w.totalPauseFormatted || "00:00";
+          const trabajadas = w.totalWorkedFormatted || "00:00:00";
+          const pausas = w.totalPauseFormatted || "00:00:00";
 
           if (y > 280) {
             doc.addPage();
@@ -423,9 +473,70 @@
           y += 6;
         });
 
+        // ----------------------------------------------------
+        // PARTE 2: AUSENCIAS APROBADAS (Lógica nueva)
+        // ----------------------------------------------------
+        y += 10;
+        doc.setFontSize(10);
+        doc.text("2. Ausencias Aprobadas en el Período", 10, y);
+        y += 7;
+
+        // Encabezados de la tabla de ausencias
+        doc.setFontSize(9);
+        doc.text("Trabajador", 10, y);
+        doc.text("Tipo", 70, y);
+        doc.text("Inicio", 110, y);
+        doc.text("Fin", 140, y);
+        doc.text("Motivo", 170, y);
+        y += 6;
+
+        let foundAbsences = false;
+
+        workers.forEach((w) => {
+          const absences = w.absences || [];
+
+          absences.forEach((a) => {
+            foundAbsences = true;
+            const name = w.fullName || w.email || "Sin nombre";
+            const type = mapAbsenceTypeLabel(a.finalType || a.requestedType);
+
+            if (y > 280) {
+              doc.addPage();
+              y = 20;
+              doc.setFontSize(9);
+              doc.text("Trabajador", 10, y);
+              doc.text("Tipo", 70, y);
+              doc.text("Inicio", 110, y);
+              doc.text("Fin", 140, y);
+              doc.text("Motivo", 170, y);
+              y += 6;
+            }
+
+            doc.setFontSize(8);
+            doc.text(String(name).slice(0, 30), 10, y);
+            doc.text(type, 70, y);
+            doc.text(a.startDate, 110, y);
+            doc.text(a.endDate, 140, y);
+            doc.text(String(a.reason || "-").slice(0, 30), 170, y);
+            y += 5;
+          });
+        });
+
+        if (!foundAbsences) {
+          doc.setFontSize(9);
+          doc.setTextColor(150);
+          doc.text(
+            "No se registraron ausencias aprobadas en este rango.",
+            10,
+            y
+          );
+          doc.setTextColor(0);
+          y += 6;
+        }
+
         const safeFrom = from.replaceAll("-", "");
         const safeTo = to.replaceAll("-", "");
-        const fileName = `reporte-fichajes_${safeFrom}_a_${safeTo}.pdf`;
+        const fileName = `reporte-resumen_${safeFrom}_a_${safeTo}.pdf`;
 
         doc.save(fileName);
       }
@@ -525,7 +636,99 @@
       function closeDailyModal() {
         document.getElementById("dailyModal").classList.add("hidden");
       }
+      // frontend/public/admin-reports.html
 
+      // ... (dentro del script, antes del INIT)
+
+      // 🆕 Función para generar el PDF DETALLADO individual
+      async function generateDetailedPdf(jsPDF, userId, workerName, from, to) {
+        const doc = new jsPDF();
+
+        doc.setFontSize(16);
+        doc.text(`Reporte diario - ${workerName}`, 10, 15);
+        doc.setFontSize(10);
+        doc.text(`Rango: ${from} a ${to}`, 10, 22);
+
+        let y = 30;
+
+        // 1. Obtener datos detallados
+        try {
+          const res = await fetch(
+            `${API_BASE_URL}/admin/reports/worker/${userId}/daily?from=${from}&to=${to}`,
+            {
+              headers: { Authorization: "Bearer " + getToken() },
+            }
+          );
+
+          if (!res.ok) {
+            doc.text(`Error al cargar datos detallados del trabajador.`, 10, y);
+            doc.save(`reporte-diario-error_${userId}.pdf`);
+            return;
+          }
+
+          const data = await res.json();
+          const days = data.days || [];
+
+          // 2. Encabezados de la tabla detallada
+          doc.setFontSize(9);
+          doc.text("Fecha", 10, y);
+          doc.text("Entrada", 60, y);
+          doc.text("Salida", 100, y);
+          doc.text("Trabajadas", 140, y);
+          doc.text("Pausas", 170, y);
+          y += 6;
+
+          if (days.length === 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(150);
+            doc.text(
+              "No hay jornadas completas registradas en este rango.",
+              10,
+              y
+            );
+            doc.setTextColor(0);
+            y += 6;
+          }
+
+          days.forEach((day) => {
+            const dateLabel = mapDayShort(day.date); // Usa el helper para un formato corto
+            const entry = day.firstClockIn
+              ? new Date(day.firstClockIn).toLocaleTimeString("es-ES", {
+                  hour12: false,
+                })
+              : "--:--:--";
+            const exit = day.lastClockOut
+              ? new Date(day.lastClockOut).toLocaleTimeString("es-ES", {
+                  hour12: false,
+                })
+              : "--:--:--";
+            const worked = day.totalWorkedFormatted || "00:00:00";
+            const pauses = day.totalPauseFormatted || "00:00:00";
+
+            if (y > 280) {
+              doc.addPage();
+              y = 20;
+            }
+
+            doc.setFontSize(8);
+            doc.text(dateLabel, 10, y);
+            doc.text(entry, 60, y);
+            doc.text(exit, 100, y);
+            doc.text(worked, 140, y);
+            doc.text(pauses, 170, y);
+            y += 5;
+          });
+        } catch (err) {
+          doc.setFontSize(9);
+          doc.text(`Error de conexión al obtener datos diarios.`, 10, y);
+        }
+
+        const safeFrom = from.replaceAll("-", "");
+        const safeTo = to.replaceAll("-", "");
+        const fileName = `reporte-diario_${userId}_${safeFrom}_a_${safeTo}.pdf`;
+
+        doc.save(fileName);
+      }
       // INIT
       document.addEventListener("DOMContentLoaded", () => {
         const user = getUserInfo();

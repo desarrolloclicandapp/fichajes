@@ -170,16 +170,16 @@ if (!company || !company.isActive) {
   }
 
   // ✅ Regla de horario para CLOCK_OUT (si es antes de hora fin, exige motivo)
-  if (type === TimeEventType.CLOCK_OUT && scheduledEnd) {
-    if (now < scheduledEnd) {
-      if (!reason || !String(reason).trim()) {
-        throw {
-          status: 400,
-          message: 'Estás finalizando antes de tu hora de salida. Debes indicar un motivo.',
-        };
-      }
-    }
-  }
+ // if (type === TimeEventType.CLOCK_OUT && scheduledEnd) {
+  //  if (now < scheduledEnd) {
+  //    if (!reason || !String(reason).trim()) {
+   //     throw {
+   //       status: 400,
+   //       message: 'Estás finalizando antes de tu hora de salida. Debes indicar un motivo.',
+   //     };
+   //   }
+   // }
+ // }
 
   const event = await prisma.timeEvent.create({
     data: {

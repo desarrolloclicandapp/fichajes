@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin - Solicitudes de Ausencia</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen">
+  <div class="max-w-6xl mx-auto p-4 md:p-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-800">
+          Solicitudes de Ausencia
+        </h1>
+        <p id="companyInfoText" class="text-sm text-slate-500">
+          Cargando empresa...
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a
+          href="/admin-workers.html"
+          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+        >
+          Volver a trabajadores
+        </a>
+        <a
+          href="/admin-reports.html"
+          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+        >
+          Ver reportes
+        </a>
+        <a
+          href="/admin-logs.html"
+          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+        >
+          Ver logs
+        </a>
+        <button
+          id="btnLogout"
+          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-800">Gestión de solicitudes</h2>
+        <p class="text-xs text-slate-500">
+          Revisa y gestiona las ausencias solicitadas por los trabajadores.
+        </p>
+      </div>
+      <select
+        id="statusFilter"
+        class="rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+      >
+        <option value="">Todas</option>
+        <option value="PENDING" selected>Pendientes</option>
+        <option value="APPROVED">Aprobadas</option>
+        <option value="REJECTED">Rechazadas</option>
+      </select>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <span id="requestsCountText">Cargando...</span>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+            <tr>
+              <th class="px-4 py-2 text-left">Trabajador</th>
+              <th class="px-4 py-2 text-left">Periodo</th>
+              <th class="px-4 py-2 text-left">Tipo Solicitado</th>
+              <th class="px-4 py-2 text-left">Motivo</th>
+              <th class="px-4 py-2 text-left">Estado</th>
+              <th class="px-4 py-2 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="requestsTableBody" class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="6" class="px-4 py-4 text-center text-slate-400 text-sm">
+                Cargando solicitudes...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div
+      id="actionModal"
+      class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden"
+    >
+      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="modalTitle" class="text-lg font-semibold text-slate-800">
+            Gestionar Solicitud
+          </h3>
+          <button
+            id="btnCloseModal"
+            class="text-slate-400 hover:text-slate-600 text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        <form id="actionForm" class="space-y-4 text-sm">
+          <input type="hidden" id="requestId" />
+
+          <div class="p-3 border rounded-xl bg-slate-50 text-xs">
+              <p>Trabajador: <span id="workerName" class="font-semibold"></span></p>
+              <p>Periodo: <span id="period" class="font-semibold"></span></p>
+              <p>Motivo: <span id="reason"></span></p>
+              <p>Tipo Solicitado: <span id="requestedType" class="font-semibold"></span></p>
+          </div>
+          
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Decisión</label>
+            <select
+              id="actionStatus"
+              class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="APPROVED">Aprobar</option>
+              <option value="REJECTED">Rechazar</option>
+            </select>
+          </div>
+
+          <div id="finalTypeGroup">
+            <label class="block text-xs font-medium text-slate-600 mb-1">Tipo de Ausencia Final (si se aprueba)</label>
+            <select
+              id="actionFinalType"
+              class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:focus:border-indigo-500"
+            >
+              </select>
+          </div>
+          
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Comentario del Administrador (Opcional)</label>
+            <textarea
+              id="adminComment"
+              rows="2"
+              class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Añade un comentario sobre la decisión..."
+            ></textarea>
+          </div>
+          
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              id="btnCancelActionModal"
+              class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 border border-slate-300 hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              id="btnSubmitAction"
+              class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              Guardar Decisión
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = '/api';
+    
+    // Hardcoded for simplicity based on prisma/schema.prisma
+    const ABSENCE_TYPES = {
+      VACATION: 'Vacaciones',
+      SICK_LEAVE: 'Baja médica',
+      PAID_LEAVE: 'Permiso retribuido',
+      UNPAID_LEAVE: 'Permiso sin sueldo',
+      JUSTIFIED_OTHER: 'Otra justificada',
+      UNJUSTIFIED: 'No justificada',
+    };
+
+    function getToken() {
+      return localStorage.getItem('authToken');
+    }
+
+    function getUserInfo() {
+      const raw = localStorage.getItem('userInfo');
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function formatDateShortES(isoString) {
+      const d = new Date(isoString);
+      if (Number.isNaN(d.getTime())) return '-';
+      return d.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    }
+    
+    function mapAbsenceTypeLabel(type) {
+      return ABSENCE_TYPES[type] || type;
+    }
+
+    function mapAbsenceStatusBadge(status) {
+      switch (status) {
+        case 'APPROVED':
+          return {
+            text: 'Aprobada',
+            cls: 'px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium',
+          };
+        case 'REJECTED':
+          return {
+            text: 'Rechazada',
+            cls: 'px-2 py-1 rounded-full bg-rose-50 text-rose-700 font-medium',
+          };
+        case 'PENDING':
+        default:
+          return {
+            text: 'Pendiente',
+            cls: 'px-2 py-1 rounded-full bg-amber-50 text-amber-700 font-medium',
+          };
+      }
+    }
+    
+    function populateFinalTypeSelect(requestedType) {
+        const select = document.getElementById('actionFinalType');
+        select.innerHTML = '';
+        
+        // Opción preseleccionada (mantener el solicitado)
+        let defaultOption = document.createElement('option');
+        defaultOption.value = requestedType;
+        defaultOption.textContent = 'Mantener: ' + mapAbsenceTypeLabel(requestedType);
+        select.appendChild(defaultOption);
+        
+        // Resto de opciones (incluyendo UNJUSTIFIED)
+        Object.entries(ABSENCE_TYPES).forEach(([key, value]) => {
+            if (key !== requestedType) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = value;
+                select.appendChild(opt);
+            }
+        });
+        
+        // Mostrar/Ocultar el campo si la decisión es REJECTED
+        const statusSelect = document.getElementById('actionStatus');
+        const finalTypeGroup = document.getElementById('finalTypeGroup');
+        if (statusSelect.value === 'APPROVED') {
+            finalTypeGroup.style.display = 'block';
+        } else {
+             finalTypeGroup.style.display = 'none';
+        }
+    }
+
+
+    async function loadAbsenceRequests() {
+      const tbody = document.getElementById('requestsTableBody');
+      const statusFilter = document.getElementById('statusFilter').value;
+      const countText = document.getElementById('requestsCountText');
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="px-4 py-4 text-center text-slate-400 text-sm">
+            Cargando solicitudes...
+          </td>
+        </tr>
+      `;
+      countText.textContent = 'Cargando...';
+
+      const params = new URLSearchParams();
+      if (statusFilter) params.set('status', statusFilter);
+
+      try {
+        const res = await fetch(
+          API_BASE_URL + '/admin/absences/requests?' + params.toString(),
+          {
+            headers: { Authorization: 'Bearer ' + getToken() },
+          }
+        );
+
+        if (!res.ok) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="px-4 py-4 text-center text-rose-500 text-sm">
+                Error al cargar solicitudes.
+              </td>
+            </tr>
+          `;
+          countText.textContent = 'Error.';
+          return;
+        }
+
+        const requests = await res.json();
+
+        countText.textContent =
+          requests.length === 1
+            ? '1 solicitud encontrada.'
+            : `${requests.length} solicitudes encontradas.`;
+
+        if (!requests.length) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="px-4 py-4 text-center text-slate-400 text-sm">
+                No hay solicitudes con el filtro actual.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = '';
+        requests.forEach((req) => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-50';
+          
+          const statusInfo = mapAbsenceStatusBadge(req.status);
+          const fullName = req.user?.fullName || req.user?.email || 'N/A';
+          // Se asume que la fecha de inicio es un objeto Date o un ISOString (al ser de Prisma)
+          const period = `${formatDateShortES(req.startDate)} - ${formatDateShortES(req.endDate)}`;
+          const requestedType = mapAbsenceTypeLabel(req.requestedType);
+          
+          tr.innerHTML = `
+            <td class="px-4 py-2 whitespace-nowrap">${fullName}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-xs">${period}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-xs text-slate-600">${requestedType}</td>
+            <td class="px-4 py-2 text-xs max-w-xs truncate">${req.reason || '-'}</td>
+            <td class="px-4 py-2 whitespace-nowrap"><span class="${statusInfo.cls}">${statusInfo.text}</span></td>
+            <td class="px-4 py-2 text-right text-xs">
+              <button 
+                class="btnManageRequest px-2 py-1 rounded-lg border border-slate-300 hover:bg-slate-50" 
+                data-id="${req.id}"
+                data-name="${fullName}"
+                data-period="${period}"
+                data-requested-type="${req.requestedType}"
+                data-reason="${req.reason || ''}"
+                data-current-status="${req.status}"
+                ${req.status !== 'PENDING' ? 'disabled' : ''}
+              >
+                ${req.status === 'PENDING' ? 'Gestionar' : 'Ver'}
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.querySelectorAll('.btnManageRequest').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            // solo permitir gestionar si está PENDING
+            if (btn.dataset.currentStatus === 'PENDING') {
+                openActionModal({
+                    id: btn.dataset.id,
+                    name: btn.dataset.name,
+                    period: btn.dataset.period,
+                    requestedType: btn.dataset.requestedType,
+                    reason: btn.dataset.reason,
+                });
+            } else {
+                alert('Esta solicitud ya ha sido gestionada.');
+            }
+          });
+        });
+        
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="px-4 py-4 text-center text-rose-500 text-sm">
+              Error de conexión al cargar solicitudes.
+            </td>
+          </tr>
+        `;
+        countText.textContent = 'Error de conexión.';
+      }
+    }
+    
+    function openActionModal({ id, name, period, requestedType, reason }) {
+        const modal = document.getElementById('actionModal');
+        
+        // Llenar info de la solicitud
+        document.getElementById('requestId').value = id;
+        document.getElementById('workerName').textContent = name;
+        document.getElementById('period').textContent = period;
+        document.getElementById('reason').textContent = reason;
+        document.getElementById('requestedType').textContent = mapAbsenceTypeLabel(requestedType);
+        
+        // Resetear form de acción
+        document.getElementById('actionStatus').value = 'APPROVED'; // default a aprobar
+        document.getElementById('adminComment').value = '';
+        populateFinalTypeSelect(requestedType);
+        
+        modal.classList.remove('hidden');
+    }
+
+    function closeActionModal() {
+      document.getElementById('actionModal').classList.add('hidden');
+    }
+
+    async function submitAction(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('requestId').value;
+      const status = document.getElementById('actionStatus').value;
+      const comment = document.getElementById('adminComment').value.trim() || null;
+      let finalType = null;
+      
+      if (status === 'APPROVED') {
+          finalType = document.getElementById('actionFinalType').value;
+      }
+
+      const payload = {
+        status,
+        adminComment: comment,
+        finalType,
+      };
+
+      try {
+        const res = await fetch(
+          API_BASE_URL + `/admin/absences/requests/${id}/status`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + getToken(),
+            },
+            body: JSON.stringify(payload),
+          }
+        );
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          alert(data.message || 'Error al guardar la decisión');
+          return;
+        }
+
+        alert('Decisión guardada correctamente.');
+        closeActionModal();
+        await loadAbsenceRequests();
+      } catch (err) {
+        console.error(err);
+        alert('Error de conexión al guardar la decisión');
+      }
+    }
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = getUserInfo();
+      if (!getToken() || !user || (user.role !== 'CLIENT_ADMIN' && user.role !== 'SUPER_ADMIN')) {
+        window.location.href = '/login.html';
+        return;
+      }
+
+      document.getElementById('companyInfoText').textContent =
+        (user.companyName || 'Empresa sin nombre') + ' · ' + user.role;
+
+      document.getElementById('btnLogout').addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userInfo');
+        window.location.href = '/login.html';
+      });
+
+      // Event listeners para la tabla y modales
+      document.getElementById('statusFilter').addEventListener('change', loadAbsenceRequests);
+      
+      document.getElementById('btnCloseModal').addEventListener('click', closeActionModal);
+      document.getElementById('btnCancelActionModal').addEventListener('click', closeActionModal);
+      document.getElementById('actionForm').addEventListener('submit', submitAction);
+      
+      // Lógica para mostrar/ocultar el selector de tipo final
+      document.getElementById('actionStatus').addEventListener('change', (e) => {
+          const requestedType = document.getElementById('requestedType').textContent;
+          if (e.target.value === 'APPROVED') {
+               document.getElementById('finalTypeGroup').style.display = 'block';
+               // Recargar opciones por si se cambia el tipo original
+               populateFinalTypeSelect(Object.keys(ABSENCE_TYPES).find(key => ABSENCE_TYPES[key] === requestedType) || 'VACATION');
+          } else {
+               document.getElementById('finalTypeGroup').style.display = 'none';
+          }
+      });
+      
+
+      loadAbsenceRequests();
+    });
+  </script>
+</body>
+</html>

@@ -13,8 +13,8 @@ prisma/dev.db
 prisma/*.sqlite
 
 # Logs
-logs
-*.log
+#logs
+#*.log
 
 # Sistema
 .DS_Store

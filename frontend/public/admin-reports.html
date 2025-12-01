@@ -1,112 +1,182 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Admin - Reportes</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-100 min-h-screen">
-  <div class="max-w-5xl mx-auto p-4 md:p-6">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-800">
-          Reportes de horas
-        </h1>
-        <p id="companyInfoText" class="text-sm text-slate-500">
-          Cargando empresa...
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
-        <a
-          href="/admin-workers.html"
-          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-        >
-          Volver a trabajadores
-        </a>
-        <a
-  href="/admin-logs.html"
-  class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
->
-  Ver logs
-</a>
-        <button
-          id="btnLogout"
-          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-        >
-          Cerrar sesión
-        </button>
-      </div>
-    </div>
-
-    <!-- Filtros -->
-    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 mb-4">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Admin - Reportes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  </head>
+  <body class="bg-slate-100 min-h-screen">
+    <div class="max-w-5xl mx-auto p-4 md:p-6">
+      <!-- Header -->
+      <div
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
+      >
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Desde</label>
-          <input
-            type="date"
-            id="inputFrom"
-            class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          />
+          <h1 class="text-2xl font-semibold text-slate-800">
+            Reportes de horas
+          </h1>
+          <p id="companyInfoText" class="text-sm text-slate-500">
+            Cargando empresa...
+          </p>
         </div>
-        <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Hasta</label>
-          <input
-            type="date"
-            id="inputTo"
-            class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
-        <div class="flex gap-2">
-          <button
-            id="btnLoadReport"
-            class="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+        <div class="flex items-center gap-3">
+          <a
+            href="/admin-workers.html"
+            class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
           >
-            Ver resumen
+            Volver a trabajadores
+          </a>
+          <a
+            href="/admin-logs.html"
+            class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+          >
+            Ver logs
+          </a>
+          <button
+            id="btnLogout"
+            class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+          >
+            Cerrar sesión
           </button>
         </div>
-        <div class="text-right text-xs text-slate-500" id="reportInfoText"></div>
       </div>
-    </div>
 
-    <!-- Tabla -->
-    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-           <!-- Modal detalle diario -->
-    <div
-      id="dailyModal"
-      class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden"
-    >
-      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 id="dailyModalTitle" class="text-lg font-semibold text-slate-800">
-            Detalle diario
-          </h3>
+      <!-- Filtros -->
+      <div
+        class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 mb-4"
+      >
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1"
+              >Desde</label
+            >
+            <input
+              type="date"
+              id="inputFrom"
+              class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1"
+              >Hasta</label
+            >
+            <input
+              type="date"
+              id="inputTo"
+              class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <div class="flex gap-2">
+            <button
+              id="btnLoadReport"
+              class="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              Ver resumen
+            </button>
+          </div>
+          <div
+            class="text-right text-xs text-slate-500"
+            id="reportInfoText"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Tabla + modal -->
+      <div
+        class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+      >
+        <!-- Modal detalle diario (solo visual) -->
+        <div
+          id="dailyModal"
+          class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden"
+        >
+          <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3
+                id="dailyModalTitle"
+                class="text-lg font-semibold text-slate-800"
+              >
+                Detalle diario
+              </h3>
+              <button
+                id="btnCloseDailyModal"
+                class="text-slate-400 hover:text-slate-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div id="dailyModalInfo" class="text-xs text-slate-500 mb-2"></div>
+
+            <div
+              class="border border-slate-200 rounded-xl max-h-64 overflow-y-auto"
+            >
+              <table class="min-w-full text-xs">
+                <thead class="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th class="px-3 py-2 text-left">Fecha</th>
+                    <th class="px-3 py-2 text-left">Entrada</th>
+                    <th class="px-3 py-2 text-left">Salida</th>
+                    <th class="px-3 py-2 text-right">Trabajadas</th>
+                    <th class="px-3 py-2 text-right">Pausas</th>
+                  </tr>
+                </thead>
+                <tbody id="dailyModalBody" class="divide-y divide-slate-100">
+                  <tr>
+                    <td
+                      colspan="5"
+                      class="px-3 py-3 text-center text-slate-400"
+                    >
+                      Cargando...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Header de la tabla -->
+        <div
+          class="px-4 py-3 border-b border-slate-200 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-3 text-xs text-slate-500">
+            <span id="summaryCountText">Sin datos.</span>
+            <select
+              id="filterWorker"
+              class="rounded-lg border-slate-300 text-xs px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">Todos los trabajadores</option>
+            </select>
+          </div>
           <button
-            id="btnCloseDailyModal"
-            class="text-slate-400 hover:text-slate-600 text-xl leading-none"
+            id="btnExportPdf"
+            class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
           >
-            ×
+            Exportar PDF
           </button>
         </div>
 
-        <div id="dailyModalInfo" class="text-xs text-slate-500 mb-2"></div>
-
-        <div class="border border-slate-200 rounded-xl max-h-64 overflow-y-auto">
-          <table class="min-w-full text-xs">
-            <thead class="bg-slate-50 text-slate-500">
+        <!-- Tabla principal -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
-                <th class="px-3 py-2 text-left">Fecha</th>
-                <th class="px-3 py-2 text-left">Entrada</th>
-                <th class="px-3 py-2 text-left">Salida</th>
-                <th class="px-3 py-2 text-right">Trabajadas</th>
-                <th class="px-3 py-2 text-right">Pausas</th>
+                <th class="px-4 py-2 text-left">Trabajador</th>
+                <th class="px-4 py-2 text-left">Email</th>
+                <th class="px-4 py-2 text-right">Días</th>
+                <th class="px-4 py-2 text-right">Horas trabajadas</th>
+                <th class="px-4 py-2 text-right">Horas en pausa</th>
               </tr>
             </thead>
-            <tbody id="dailyModalBody" class="divide-y divide-slate-100">
+            <tbody id="reportTableBody" class="divide-y divide-slate-100">
               <tr>
-                <td colspan="5" class="px-3 py-3 text-center text-slate-400">
-                  Cargando...
+                <td
+                  colspan="5"
+                  class="px-4 py-4 text-center text-slate-400 text-sm"
+                >
+                  Selecciona un rango de fechas y pulsa "Ver resumen".
                 </td>
               </tr>
             </tbody>
@@ -115,111 +185,45 @@
       </div>
     </div>
 
-        <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <div class="text-xs text-slate-500" id="summaryCountText">
-          Sin datos.
-        </div>
-        <button
-          id="btnExportCsv"
-          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled
-        >
-          Exportar CSV
-        </button>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 text-xs uppercase text-slate-500">
-            <tr>
-              <th class="px-4 py-2 text-left">Trabajador</th>
-              <th class="px-4 py-2 text-left">Email</th>
-              <th class="px-4 py-2 text-right">Días</th>
-              <th class="px-4 py-2 text-right">Horas trabajadas</th>
-              <th class="px-4 py-2 text-right">Horas en pausa</th>
-            </tr>
-          </thead>
-          <tbody id="reportTableBody" class="divide-y divide-slate-100">
-            <tr>
-              <td colspan="5" class="px-4 py-4 text-center text-slate-400 text-sm">
-                Selecciona un rango de fechas y pulsa "Ver resumen".
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+    <script>
+      const API_BASE_URL = "/api";
+      let reportData = []; // resumen por trabajador (último reporte cargado)
 
-  <script>
-    const API_BASE_URL = '/api';
-
-    function getToken() {
-      return localStorage.getItem('authToken');
-    }
-
-    function getUserInfo() {
-      const raw = localStorage.getItem('userInfo');
-      if (!raw) return null;
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return null;
-      }
-    }
-
-    function formatDateForInput(d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    async function loadReport() {
-      const tbody = document.getElementById('reportTableBody');
-      const from = document.getElementById('inputFrom').value;
-      const to = document.getElementById('inputTo').value;
-      const infoText = document.getElementById('reportInfoText');
-      const countText = document.getElementById('summaryCountText');
-      const exportBtn = document.getElementById('btnExportCsv');
-
-      if (!from || !to) {
-        alert('Selecciona las fechas "desde" y "hasta".');
-        return;
+      function getToken() {
+        return localStorage.getItem("authToken");
       }
 
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5" class="px-4 py-4 text-center text-slate-400 text-sm">
-            Cargando reporte...
-          </td>
-        </tr>
-      `;
-
-      infoText.textContent = `Rango: ${from} a ${to}`;
-      exportBtn.disabled = true;
-
-      try {
-        const res = await fetch(
-          API_BASE_URL + `/admin/reports/summary?from=${from}&to=${to}`,
-          {
-            headers: { Authorization: 'Bearer ' + getToken() },
-          }
-        );
-
-        if (!res.ok) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="5" class="px-4 py-4 text-center text-rose-500 text-sm">
-                Error al cargar el reporte.
-              </td>
-            </tr>
-          `;
-          countText.textContent = 'Error al cargar.';
-          return;
+      function getUserInfo() {
+        const raw = localStorage.getItem("userInfo");
+        if (!raw) return null;
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return null;
         }
+      }
 
-        const data = await res.json();
-        const workers = data.workers || [];
+      function formatDateForInput(d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function formatDateNice(isoDateStr) {
+        const d = new Date(isoDateStr + "T00:00:00");
+        return d.toLocaleDateString("es-ES", {
+          weekday: "short",
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      // Pinta la tabla principal
+      function renderReportTable(workers) {
+        const tbody = document.getElementById("reportTableBody");
+        const countText = document.getElementById("summaryCountText");
 
         if (!workers.length) {
           tbody.innerHTML = `
@@ -229,187 +233,349 @@
               </td>
             </tr>
           `;
-          countText.textContent = 'Sin datos.';
+          countText.textContent = "Sin datos.";
           return;
         }
 
-        tbody.innerHTML = '';
+        tbody.innerHTML = "";
+
         workers.forEach((w) => {
-  const tr = document.createElement('tr');
-  tr.className = 'hover:bg-slate-50 cursor-pointer';
-  tr.dataset.userId = w.userId;
-  tr.dataset.fullName = w.fullName || '';
-  tr.dataset.email = w.email || '';
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 cursor-pointer";
+          tr.dataset.userId = w.userId;
+          tr.dataset.fullName = w.fullName || "";
+          tr.dataset.email = w.email || "";
 
-  tr.innerHTML = `
-    <td class="px-4 py-2 whitespace-nowrap">${w.fullName || '-'}</td>
-    <td class="px-4 py-2 whitespace-nowrap">${w.email || '-'}</td>
-    <td class="px-4 py-2 whitespace-nowrap text-right">${w.daysCount}</td>
-    <td class="px-4 py-2 whitespace-nowrap text-right">${w.totalWorkedFormatted}</td>
-    <td class="px-4 py-2 whitespace-nowrap text-right">${w.totalPauseFormatted}</td>
-  `;
-  tbody.appendChild(tr);
-});
+          tr.innerHTML = `
+            <td class="px-4 py-2 whitespace-nowrap">${w.fullName || "-"}</td>
+            <td class="px-4 py-2 whitespace-nowrap">${w.email || "-"}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-right">${w.daysCount}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-right">${w.totalWorkedFormatted}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-right">${w.totalPauseFormatted}</td>
+          `;
+          tbody.appendChild(tr);
+        });
 
-// añadir listeners para abrir el modal
-tbody.querySelectorAll('tr').forEach((row) => {
-  if (!row.dataset.userId) return;
-  row.addEventListener('click', () => {
-    openDailyModal(row.dataset.userId, row.dataset.fullName, row.dataset.email);
-  });
-});
-
+        // click en fila => ver detalle diario (solo visual)
+        tbody.querySelectorAll("tr").forEach((row) => {
+          if (!row.dataset.userId) return;
+          row.addEventListener("click", () => {
+            openDailyModal(
+              row.dataset.userId,
+              row.dataset.fullName,
+              row.dataset.email
+            );
+          });
+        });
 
         countText.textContent =
           workers.length === 1
-            ? '1 trabajador en el reporte.'
+            ? "1 trabajador en el reporte."
             : `${workers.length} trabajadores en el reporte.`;
+      }
 
-        exportBtn.disabled = false;
-        exportBtn.dataset.from = from;
-        exportBtn.dataset.to = to;
-      } catch (err) {
-        console.error(err);
+      // Cargar reporte desde backend
+      async function loadReport() {
+        const tbody = document.getElementById("reportTableBody");
+        const from = document.getElementById("inputFrom").value;
+        const to = document.getElementById("inputTo").value;
+        const infoText = document.getElementById("reportInfoText");
+        const exportBtn = document.getElementById("btnExportPdf");
+        const filter = document.getElementById("filterWorker");
+
+        if (!from || !to) {
+          alert('Selecciona las fechas "desde" y "hasta".');
+          return;
+        }
+
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" class="px-4 py-4 text-center text-rose-500 text-sm">
-              Error de conexión al cargar el reporte.
+            <td colspan="5" class="px-4 py-4 text-center text-slate-400 text-sm">
+              Cargando reporte...
             </td>
           </tr>
         `;
-        countText.textContent = 'Error de conexión.';
-      }
-    }
 
-    function exportCsv() {
-      const from = document.getElementById('btnExportCsv').dataset.from;
-      const to = document.getElementById('btnExportCsv').dataset.to;
-      if (!from || !to) return;
+        infoText.textContent = `Rango: ${from} a ${to}`;
+        if (exportBtn) exportBtn.disabled = true;
 
-      // para simplificar: abrimos la URL en otra pestaña, el backend sirve el CSV
-      const url = `${API_BASE_URL}/admin/reports/export.csv?from=${from}&to=${to}`;
-      window.open(url, '_blank');
-    }
-function formatDateNice(isoDateStr) {
-  const d = new Date(isoDateStr + 'T00:00:00');
-  return d.toLocaleDateString('es-ES', {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+        try {
+          const res = await fetch(
+            API_BASE_URL + `/admin/reports/summary?from=${from}&to=${to}`,
+            {
+              headers: { Authorization: "Bearer " + getToken() },
+            }
+          );
 
-async function openDailyModal(userId, fullName, email) {
-  const from = document.getElementById('inputFrom').value;
-  const to = document.getElementById('inputTo').value;
-  const modal = document.getElementById('dailyModal');
-  const title = document.getElementById('dailyModalTitle');
-  const info = document.getElementById('dailyModalInfo');
-  const body = document.getElementById('dailyModalBody');
+          if (!res.ok) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="5" class="px-4 py-4 text-center text-rose-500 text-sm">
+                  Error al cargar el reporte.
+                </td>
+              </tr>
+            `;
+            document.getElementById("summaryCountText").textContent =
+              "Error al cargar.";
+            return;
+          }
 
-  title.textContent = fullName || email || 'Detalle diario';
-  info.textContent = `Rango: ${from} a ${to}`;
-  body.innerHTML = `
-    <tr>
-      <td colspan="5" class="px-3 py-3 text-center text-slate-400">
-        Cargando...
-      </td>
-    </tr>
-  `;
+          const data = await res.json();
+          const workers = data.workers || [];
+          reportData = workers;
 
-  modal.classList.remove('hidden');
+          if (!workers.length) {
+            renderReportTable([]);
+            return;
+          }
 
-  try {
-    const res = await fetch(
-      `${API_BASE_URL}/admin/reports/worker/${userId}/daily?from=${from}&to=${to}`,
-      {
-        headers: { Authorization: 'Bearer ' + getToken() },
-      }
-    );
+          // rellenar filtro
+          if (filter) {
+            filter.innerHTML =
+              '<option value="">Todos los trabajadores</option>';
+            workers.forEach((w) => {
+              const opt = document.createElement("option");
+              opt.value = w.userId;
+              opt.textContent = w.fullName || w.email || "Sin nombre";
+              filter.appendChild(opt);
+            });
+          }
 
-    if (!res.ok) {
-      body.innerHTML = `
-        <tr>
-          <td colspan="5" class="px-3 py-3 text-center text-rose-500">
-            Error al cargar el detalle diario.
-          </td>
-        </tr>
-      `;
-      return;
-    }
+          renderReportTable(workers);
 
-    const data = await res.json();
-    const days = data.days || [];
-
-    if (!days.length) {
-      body.innerHTML = `
-        <tr>
-          <td colspan="5" class="px-3 py-3 text-center text-slate-400">
-            No hay jornadas completas en este rango.
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    body.innerHTML = '';
-    days.forEach((day) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="px-3 py-2 whitespace-nowrap">${formatDateNice(day.date)}</td>
-        <td class="px-3 py-2 whitespace-nowrap">${day.firstClockIn ? new Date(day.firstClockIn).toLocaleTimeString('es-ES') : '--:--:--'}</td>
-        <td class="px-3 py-2 whitespace-nowrap">${day.lastClockOut ? new Date(day.lastClockOut).toLocaleTimeString('es-ES') : '--:--:--'}</td>
-        <td class="px-3 py-2 whitespace-nowrap text-right">${day.totalWorkedFormatted || '-'}</td>
-        <td class="px-3 py-2 whitespace-nowrap text-right">${day.totalPauseFormatted || '-'}</td>
-      `;
-      body.appendChild(tr);
-    });
-  } catch (err) {
-    console.error(err);
-    body.innerHTML = `
-      <tr>
-        <td colspan="5" class="px-3 py-3 text-center text-rose-500">
-          Error de conexión al cargar detalle diario.
-        </td>
-      </tr>
-    `;
-  }
-}
-
-function closeDailyModal() {
-  document.getElementById('dailyModal').classList.add('hidden');
-}
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const user = getUserInfo();
-      if (!getToken() || !user || (user.role !== 'CLIENT_ADMIN' && user.role !== 'SUPER_ADMIN')) {
-        window.location.href = '/login.html';
-        return;
+          if (exportBtn) {
+            exportBtn.disabled = false;
+          }
+        } catch (err) {
+          console.error(err);
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" class="px-4 py-4 text-center text-rose-500 text-sm">
+                Error de conexión al cargar el reporte.
+              </td>
+            </tr>
+          `;
+          document.getElementById("summaryCountText").textContent =
+            "Error de conexión.";
+        }
       }
 
-      document.getElementById('companyInfoText').textContent =
-        (user.companyName || 'Empresa sin nombre') + ' · ' + user.role;
+      // Exportar PDF RESUMEN (usa lo que hay en la tabla / filtro)
+      function exportToPdf() {
+        const { jsPDF } = window.jspdf;
 
-      document.getElementById('btnLogout').addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userInfo');
-        window.location.href = '/login.html';
+        if (!reportData.length) {
+          alert('Primero genera un reporte con "Ver resumen".');
+          return;
+        }
+
+        const from = document.getElementById("inputFrom").value;
+        const to = document.getElementById("inputTo").value;
+        const filter = document.getElementById("filterWorker");
+        const selectedId = filter?.value || "";
+
+        // aplicamos el mismo filtro que en pantalla
+        const workers = selectedId
+          ? reportData.filter((w) => w.userId === selectedId)
+          : reportData;
+
+        if (!workers.length) {
+          alert("No hay datos para exportar con el filtro actual.");
+          return;
+        }
+
+        const doc = new jsPDF();
+
+        doc.setFontSize(16);
+        doc.text("Reporte de fichajes (resumen)", 10, 15);
+
+        doc.setFontSize(10);
+        doc.text(`Rango: ${from} a ${to}`, 10, 22);
+
+        let y = 30;
+
+        // encabezados
+        doc.setFontSize(9);
+        doc.text("Trabajador", 10, y);
+        doc.text("Días", 90, y);
+        doc.text("Trabajadas", 120, y);
+        doc.text("Pausas", 160, y);
+
+        y += 6;
+
+        workers.forEach((w) => {
+          const name = w.fullName || w.email || "Sin nombre";
+          const dias = String(w.daysCount || 0);
+          const trabajadas = w.totalWorkedFormatted || "00:00";
+          const pausas = w.totalPauseFormatted || "00:00";
+
+          if (y > 280) {
+            doc.addPage();
+            y = 20;
+          }
+
+          doc.setFontSize(9);
+          doc.text(String(name).slice(0, 40), 10, y);
+          doc.text(dias, 90, y);
+          doc.text(trabajadas, 120, y);
+          doc.text(pausas, 160, y);
+
+          y += 6;
+        });
+
+        const safeFrom = from.replaceAll("-", "");
+        const safeTo = to.replaceAll("-", "");
+        const fileName = `reporte-fichajes_${safeFrom}_a_${safeTo}.pdf`;
+
+        doc.save(fileName);
+      }
+
+      // Modal detalle diario (solo visual)
+      async function openDailyModal(userId, fullName, email) {
+        const from = document.getElementById("inputFrom").value;
+        const to = document.getElementById("inputTo").value;
+        const modal = document.getElementById("dailyModal");
+        const title = document.getElementById("dailyModalTitle");
+        const info = document.getElementById("dailyModalInfo");
+        const body = document.getElementById("dailyModalBody");
+
+        title.textContent = fullName || email || "Detalle diario";
+        info.textContent = `Rango: ${from} a ${to}`;
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="px-3 py-3 text-center text-slate-400">
+              Cargando...
+            </td>
+          </tr>
+        `;
+
+        modal.classList.remove("hidden");
+
+        try {
+          const res = await fetch(
+            `${API_BASE_URL}/admin/reports/worker/${userId}/daily?from=${from}&to=${to}`,
+            {
+              headers: { Authorization: "Bearer " + getToken() },
+            }
+          );
+
+          if (!res.ok) {
+            body.innerHTML = `
+              <tr>
+                <td colspan="5" class="px-3 py-3 text-center text-rose-500">
+                  Error al cargar el detalle diario.
+                </td>
+              </tr>
+            `;
+            return;
+          }
+
+          const data = await res.json();
+          const days = data.days || [];
+
+          if (!days.length) {
+            body.innerHTML = `
+              <tr>
+                <td colspan="5" class="px-3 py-3 text-center text-slate-400">
+                  No hay jornadas completas en este rango.
+                </td>
+              </tr>
+            `;
+            return;
+          }
+
+          body.innerHTML = "";
+          days.forEach((day) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td class="px-3 py-2 whitespace-nowrap">${formatDateNice(
+                day.date
+              )}</td>
+              <td class="px-3 py-2 whitespace-nowrap">${
+                day.firstClockIn
+                  ? new Date(day.firstClockIn).toLocaleTimeString("es-ES")
+                  : "--:--:--"
+              }</td>
+              <td class="px-3 py-2 whitespace-nowrap">${
+                day.lastClockOut
+                  ? new Date(day.lastClockOut).toLocaleTimeString("es-ES")
+                  : "--:--:--"
+              }</td>
+              <td class="px-3 py-2 whitespace-nowrap text-right">${
+                day.totalWorkedFormatted || "-"
+              }</td>
+              <td class="px-3 py-2 whitespace-nowrap text-right">${
+                day.totalPauseFormatted || "-"
+              }</td>
+            `;
+            body.appendChild(tr);
+          });
+        } catch (err) {
+          console.error(err);
+          body.innerHTML = `
+            <tr>
+              <td colspan="5" class="px-3 py-3 text-center text-rose-500">
+                Error de conexión al cargar detalle diario.
+              </td>
+            </tr>
+          `;
+        }
+      }
+
+      function closeDailyModal() {
+        document.getElementById("dailyModal").classList.add("hidden");
+      }
+
+      // INIT
+      document.addEventListener("DOMContentLoaded", () => {
+        const user = getUserInfo();
+        if (
+          !getToken() ||
+          !user ||
+          (user.role !== "CLIENT_ADMIN" && user.role !== "SUPER_ADMIN")
+        ) {
+          window.location.href = "/login.html";
+          return;
+        }
+
+        document.getElementById("companyInfoText").textContent =
+          (user.companyName || "Empresa sin nombre") + " · " + user.role;
+
+        document.getElementById("btnLogout").addEventListener("click", () => {
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("userInfo");
+          window.location.href = "/login.html";
+        });
+
+        // Fechas por defecto: últimos 7 días
+        const today = new Date();
+        const fromDate = new Date(today);
+        fromDate.setDate(fromDate.getDate() - 6);
+
+        document.getElementById("inputFrom").value =
+          formatDateForInput(fromDate);
+        document.getElementById("inputTo").value = formatDateForInput(today);
+
+        document
+          .getElementById("btnLoadReport")
+          .addEventListener("click", loadReport);
+        document
+          .getElementById("btnExportPdf")
+          .addEventListener("click", exportToPdf);
+        document
+          .getElementById("btnCloseDailyModal")
+          .addEventListener("click", closeDailyModal);
+
+        // Filtro por trabajador
+        const filter = document.getElementById("filterWorker");
+        filter.addEventListener("change", (e) => {
+          const value = e.target.value;
+          const filtered = value
+            ? reportData.filter((w) => w.userId === value)
+            : reportData;
+          renderReportTable(filtered);
+        });
       });
-
-      // fechas por defecto: esta semana (últimos 7 días)
-      const today = new Date();
-      const fromDate = new Date(today);
-      fromDate.setDate(fromDate.getDate() - 6);
-
-      document.getElementById('inputFrom').value = formatDateForInput(fromDate);
-      document.getElementById('inputTo').value = formatDateForInput(today);
-
-      document.getElementById('btnLoadReport').addEventListener('click', loadReport);
-      document.getElementById('btnExportCsv').addEventListener('click', exportCsv);
-    document.getElementById('btnCloseDailyModal').addEventListener('click', closeDailyModal);
-
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

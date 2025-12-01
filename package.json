@@ -5,10 +5,9 @@
   "main": "index.js",
   "scripts": {
     "seed": "node prisma/seed.js",
-      "dev": "node backend/src/app.js",
-  "migrate": "prisma migrate dev",
-  "studio": "prisma studio",
-
+    "dev": "node backend/src/app.js",
+    "migrate": "prisma migrate dev",
+    "studio": "prisma studio",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -22,9 +21,9 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "pdfkit": "^0.17.2",
     "prisma": "^6.13.0"
   },
-  
   "prisma": {
     "seed": "node prisma/seed.js"
   }

@@ -1,573 +1,829 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Panel de fichaje - Empleado</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-100 min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-3xl mx-auto p-4">
-    <div class="bg-white shadow-lg rounded-2xl p-6 border border-slate-200">
-      <!-- CABECERA -->
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div>
-          <h1 class="text-2xl font-semibold text-slate-800">
-            Panel de fichaje
-          </h1>
-          <p id="userInfoText" class="text-sm text-slate-500">
-            Cargando usuario...
-          </p>
-        </div>
-        <div class="flex flex-col items-end gap-2">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Panel de fichaje - Empleado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-3xl mx-auto p-4">
+      <div class="bg-white shadow-lg rounded-2xl p-6 border border-slate-200">
+        <!-- CABECERA -->
+        <div
+          class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
+        >
           <div>
-            <div id="currentTime" class="text-3xl font-mono font-bold text-slate-900">
-              --:--:--
-            </div>
-            <div id="currentDate" class="text-sm text-slate-500"></div>
+            <h1 class="text-2xl font-semibold text-slate-800">
+              Panel de fichaje
+            </h1>
+            <p id="userInfoText" class="text-sm text-slate-500">
+              Cargando usuario...
+            </p>
           </div>
+          <div class="flex flex-col items-end gap-2">
+            <div>
+              <div
+                id="currentTime"
+                class="text-3xl font-mono font-bold text-slate-900"
+              >
+                --:--:--
+              </div>
+              <div id="currentDate" class="text-sm text-slate-500"></div>
+            </div>
+            <button
+              id="btnLogout"
+              class="text-xs px-3 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+
+        <!-- ESTADO -->
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-slate-500">Estado actual:</span>
+            <span
+              id="statusBadge"
+              class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700"
+            >
+              Cargando...
+            </span>
+          </div>
+          <div class="text-xs text-slate-400">
+            Última acción: <span id="lastAction">-</span>
+          </div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <button
-            id="btnLogout"
-            class="text-xs px-3 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+            id="btnClockIn"
+            class="w-full py-3 rounded-xl font-semibold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Cerrar sesión
+            Iniciar jornada
           </button>
-        </div>
-      </div>
-
-      <!-- ESTADO -->
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-slate-500">Estado actual:</span>
-          <span
-            id="statusBadge"
-            class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700"
-          >
-            Cargando...
-          </span>
-        </div>
-        <div class="text-xs text-slate-400">
-          Última acción: <span id="lastAction">-</span>
-        </div>
-      </div>
-
-      <!-- BOTONES -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <button
-          id="btnClockIn"
-          class="w-full py-3 rounded-xl font-semibold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
-        >
-          Iniciar jornada
-        </button>
-
-        <button
-          id="btnClockOut"
-          class="w-full py-3 rounded-xl font-semibold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
-        >
-          Finalizar jornada
-        </button>
-
-        <div class="flex flex-col gap-2">
-          <select
-            id="pauseReason"
-            class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-          >
-            <option value="">Motivo de la pausa (opcional)</option>
-            <option value="comida">Pausa para comer</option>
-            <option value="baño">Pausa para ir al baño</option>
-            <option value="gestiones">Gestiones personales</option>
-            <option value="otros">Otros</option>
-          </select>
 
           <button
-            id="btnBreakStart"
-            class="w-full py-3 rounded-xl font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            id="btnClockOut"
+            class="w-full py-3 rounded-xl font-semibold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Iniciar pausa
+            Finalizar jornada
+          </button>
+
+          <div class="flex flex-col gap-2">
+            <select
+              id="pauseReason"
+              class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+            >
+              <option value="">Motivo de la pausa (opcional)</option>
+              <option value="comida">Pausa para comer</option>
+              <option value="baño">Pausa para ir al baño</option>
+              <option value="gestiones">Gestiones personales</option>
+              <option value="otros">Otros</option>
+            </select>
+
+            <button
+              id="btnBreakStart"
+              class="w-full py-3 rounded-xl font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+              Iniciar pausa
+            </button>
+          </div>
+
+          <button
+            id="btnBreakEnd"
+            class="w-full py-3 rounded-xl font-semibold text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            Finalizar pausa
           </button>
         </div>
 
-        <button
-          id="btnBreakEnd"
-          class="w-full py-3 rounded-xl font-semibold text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
-        >
-          Finalizar pausa
-        </button>
-      </div>
-
-      <!-- FICHAJES DE HOY -->
-      <div>
-        <h2 class="text-sm font-semibold text-slate-700 mb-3">
-          Fichajes de hoy
-        </h2>
-        <div
-          id="eventsContainer"
-          class="bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-56 overflow-y-auto text-sm"
-        >
-          <p class="text-slate-400 text-sm">
-            Sin fichajes todavía.
-          </p>
+        <!-- FICHAJES DE HOY -->
+        <div>
+          <h2 class="text-sm font-semibold text-slate-700 mb-3">
+            Fichajes de hoy
+          </h2>
+          <div
+            id="eventsContainer"
+            class="bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-56 overflow-y-auto text-sm"
+          >
+            <p class="text-slate-400 text-sm">Sin fichajes todavía.</p>
+          </div>
         </div>
-      </div>
 
-      <!-- HISTORIAL -->
-      <div class="mt-6">
-        <h2 class="text-sm font-semibold text-slate-700 mb-3">
-          Últimos días
-        </h2>
-        <div
-          id="historyContainer"
-          class="bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-64 overflow-y-auto text-sm"
-        >
-          <p class="text-slate-400 text-sm">
-            Cargando historial...
-          </p>
+        <!-- HISTORIAL -->
+        <!-- HISTORIAL -->
+        <div class="mt-6">
+          <h2 class="text-sm font-semibold text-slate-700 mb-3">
+            Últimos días
+          </h2>
+          <div
+            id="historyContainer"
+            class="bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-64 overflow-y-auto text-sm"
+          >
+            <p class="text-slate-400 text-sm">Cargando historial...</p>
+          </div>
+        </div>
+
+        <!-- AUSENCIAS -->
+        <div class="mt-6">
+          <h2 class="text-sm font-semibold text-slate-700 mb-3">
+            Ausencias y bajas
+          </h2>
+
+          <!-- Formulario de solicitud -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-3">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">
+                  Tipo de ausencia
+                </label>
+                <select
+                  id="absenceType"
+                  class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="VACATION">Vacaciones</option>
+                  <option value="SICK_LEAVE">Baja médica</option>
+                  <option value="PAID_LEAVE">Permiso retribuido</option>
+                  <option value="UNPAID_LEAVE">Permiso sin sueldo</option>
+                  <option value="JUSTIFIED_OTHER">Otra justificada</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">
+                  Desde
+                </label>
+                <input
+                  type="date"
+                  id="absenceFrom"
+                  class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">
+                  Hasta
+                </label>
+                <input
+                  type="date"
+                  id="absenceTo"
+                  class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="block text-xs font-medium text-slate-600 mb-1">
+                Motivo (consulta médica, vacaciones, etc.)
+              </label>
+              <textarea
+                id="absenceReason"
+                rows="2"
+                class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Explica brevemente el motivo..."
+              ></textarea>
+            </div>
+
+            <div class="flex justify-end">
+              <button
+                id="btnRequestAbsence"
+                class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                Enviar solicitud
+              </button>
+            </div>
+          </div>
+
+          <!-- Listado de mis ausencias -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4">
+            <h3 class="text-xs font-semibold text-slate-600 mb-2">
+              Mis ausencias solicitadas
+            </h3>
+            <div id="myAbsencesContainer" class="text-xs text-slate-500">
+              Cargando...
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    const API_BASE_URL = '/api';
+    <script>
+      const API_BASE_URL = "/api";
 
-    function getToken() {
-      return localStorage.getItem('authToken');
-    }
-
-    function getUserInfo() {
-      const raw = localStorage.getItem('userInfo');
-      if (!raw) return null;
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return null;
-      }
-    }
-
-    function formatTime(dateStr) {
-      const d = new Date(dateStr);
-      return d.toLocaleTimeString('es-ES', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-    }
-
-    function formatDate(date) {
-      return date.toLocaleDateString('es-ES', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    }
-
-    // ⏰ Reloj
-    function startClock() {
-      const timeEl = document.getElementById('currentTime');
-      const dateEl = document.getElementById('currentDate');
-
-      function tick() {
-        const now = new Date();
-        timeEl.textContent = now.toLocaleTimeString('es-ES');
-        dateEl.textContent = formatDate(now);
+      function getToken() {
+        return localStorage.getItem("authToken");
       }
 
-      tick();
-      setInterval(tick, 1000);
-    }
+      function getUserInfo() {
+        const raw = localStorage.getItem("userInfo");
+        if (!raw) return null;
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return null;
+        }
+      }
 
-    // Helpers horario usuario (minutos a Date hoy)
-    function getTodayAtMinutes(minutes) {
-      if (minutes == null) return null;
-      const now = new Date();
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      d.setMinutes(minutes);
-      return d;
-    }
-
-    // 📅 Hoy
-    async function loadTodayEvents() {
-      const container = document.getElementById('eventsContainer');
-      container.innerHTML = '<p class="text-slate-400 text-sm">Cargando...</p>';
-
-      try {
-        const res = await fetch(API_BASE_URL + '/time/my-today', {
-          headers: { Authorization: 'Bearer ' + getToken() },
+      function formatTime(dateStr) {
+        const d = new Date(dateStr);
+        return d.toLocaleTimeString("es-ES", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
         });
+      }
 
-        if (!res.ok) {
-          container.innerHTML =
-            '<p class="text-rose-500 text-sm">Error al cargar fichajes.</p>';
-          return;
+      function formatDate(date) {
+        return date.toLocaleDateString("es-ES", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+
+      // ⏰ Reloj
+      function startClock() {
+        const timeEl = document.getElementById("currentTime");
+        const dateEl = document.getElementById("currentDate");
+
+        function tick() {
+          const now = new Date();
+          timeEl.textContent = now.toLocaleTimeString("es-ES");
+          dateEl.textContent = formatDate(now);
         }
 
-        const data = await res.json(); // { events, pauses }
-        const events = data.events || [];
-        const pauses = data.pauses || [];
+        tick();
+        setInterval(tick, 1000);
+      }
 
-        if (!events.length) {
-          container.innerHTML =
-            '<p class="text-slate-400 text-sm">Sin fichajes todavía.</p>';
-          updateStatus(null);
-          return;
-        }
+      // Helpers horario usuario (minutos a Date hoy)
+      function getTodayAtMinutes(minutes) {
+        if (minutes == null) return null;
+        const now = new Date();
+        const d = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          0,
+          0,
+          0
+        );
+        d.setMinutes(minutes);
+        return d;
+      }
 
-        const list = document.createElement('ul');
-        list.className = 'space-y-1';
+      // 📅 Hoy
+      async function loadTodayEvents() {
+        const container = document.getElementById("eventsContainer");
+        container.innerHTML =
+          '<p class="text-slate-400 text-sm">Cargando...</p>';
 
-        events.forEach((ev) => {
-          const li = document.createElement('li');
-          li.className =
-            'flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-slate-200';
+        try {
+          const res = await fetch(API_BASE_URL + "/time/my-today", {
+            headers: { Authorization: "Bearer " + getToken() },
+          });
 
-          let label = '';
-          switch (ev.type) {
-            case 'CLOCK_IN':
-              label = 'Entrada';
-              break;
-            case 'BREAK_START':
-              label = ev.reason ? `Inicio pausa (${ev.reason})` : 'Inicio pausa';
-              break;
-            case 'BREAK_END':
-              label = 'Fin pausa';
-              break;
-            case 'CLOCK_OUT':
-              label = 'Salida';
-              break;
-            default:
-              label = ev.type;
+          if (!res.ok) {
+            container.innerHTML =
+              '<p class="text-rose-500 text-sm">Error al cargar fichajes.</p>';
+            return;
           }
 
-          li.innerHTML = `
+          const data = await res.json(); // { events, pauses }
+          const events = data.events || [];
+          const pauses = data.pauses || [];
+
+          if (!events.length) {
+            container.innerHTML =
+              '<p class="text-slate-400 text-sm">Sin fichajes todavía.</p>';
+            updateStatus(null);
+            return;
+          }
+
+          const list = document.createElement("ul");
+          list.className = "space-y-1";
+
+          events.forEach((ev) => {
+            const li = document.createElement("li");
+            li.className =
+              "flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-slate-200";
+
+            let label = "";
+            switch (ev.type) {
+              case "CLOCK_IN":
+                label = "Entrada";
+                break;
+              case "BREAK_START":
+                label = ev.reason
+                  ? `Inicio pausa (${ev.reason})`
+                  : "Inicio pausa";
+                break;
+              case "BREAK_END":
+                label = "Fin pausa";
+                break;
+              case "CLOCK_OUT":
+                label = "Salida";
+                break;
+              default:
+                label = ev.type;
+            }
+
+            li.innerHTML = `
             <span class="font-medium text-slate-700">${label}</span>
             <span class="font-mono text-xs text-slate-500">${formatTime(
               ev.timestamp
             )}</span>
           `;
-          list.appendChild(li);
-        });
+            list.appendChild(li);
+          });
 
-        // resumen de pausas
-        if (pauses.length) {
-          const sep = document.createElement('div');
-          sep.className =
-            'pt-2 mt-2 border-t border-slate-200 text-xs text-slate-500';
-          sep.textContent = 'Pausas de hoy:';
-          list.appendChild(sep);
+          // resumen de pausas
+          if (pauses.length) {
+            const sep = document.createElement("div");
+            sep.className =
+              "pt-2 mt-2 border-t border-slate-200 text-xs text-slate-500";
+            sep.textContent = "Pausas de hoy:";
+            list.appendChild(sep);
 
-          pauses.forEach((p) => {
-            const item = document.createElement('div');
-            item.className = 'flex justify-between text-xs text-slate-600';
-            item.innerHTML = `
-              <span>${
-                p.reason ? p.reason + ': ' : ''
-              }${formatTime(p.start)} - ${formatTime(p.end)}</span>
+            pauses.forEach((p) => {
+              const item = document.createElement("div");
+              item.className = "flex justify-between text-xs text-slate-600";
+              item.innerHTML = `
+              <span>${p.reason ? p.reason + ": " : ""}${formatTime(
+                p.start
+              )} - ${formatTime(p.end)}</span>
               <span>${p.durationFormatted || `${p.minutes}m`} min</span>
             `;
-            list.appendChild(item);
-          });
+              list.appendChild(item);
+            });
+          }
+
+          container.innerHTML = "";
+          container.appendChild(list);
+
+          const last = events[events.length - 1];
+          updateStatus(last);
+        } catch (err) {
+          console.error(err);
+          container.innerHTML =
+            '<p class="text-rose-500 text-sm">Error al conectar con el servidor.</p>';
         }
-
-        container.innerHTML = '';
-        container.appendChild(list);
-
-        const last = events[events.length - 1];
-        updateStatus(last);
-      } catch (err) {
-        console.error(err);
-        container.innerHTML =
-          '<p class="text-rose-500 text-sm">Error al conectar con el servidor.</p>';
       }
-    }
 
-    // 📚 Historial
-    async function loadHistory() {
-      const container = document.getElementById('historyContainer');
-      container.innerHTML =
-        '<p class="text-slate-400 text-sm">Cargando historial...</p>';
+      // 📚 Historial
+      async function loadHistory() {
+        const container = document.getElementById("historyContainer");
+        container.innerHTML =
+          '<p class="text-slate-400 text-sm">Cargando historial...</p>';
 
-      try {
-        const res = await fetch(API_BASE_URL + '/time/my-history?days=7', {
-          headers: { Authorization: 'Bearer ' + getToken() },
-        });
-
-        if (!res.ok) {
-          container.innerHTML =
-            '<p class="text-rose-500 text-sm">Error al cargar el historial.</p>';
-          return;
-        }
-
-        const history = await res.json();
-        if (!history.length) {
-          container.innerHTML =
-            '<p class="text-slate-400 text-sm">Sin fichajes recientes.</p>';
-          return;
-        }
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'space-y-3';
-
-        history.forEach((day) => {
-          const card = document.createElement('div');
-          card.className =
-            'bg-white rounded-lg border border-slate-200 px-3 py-2';
-
-          const dateObj = new Date(day.date + 'T00:00:00');
-          const dateLabel = dateObj.toLocaleDateString('es-ES', {
-            weekday: 'short',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
+        try {
+          const res = await fetch(API_BASE_URL + "/time/my-history?days=7", {
+            headers: { Authorization: "Bearer " + getToken() },
           });
 
-          const workedLabel = day.totalWorkedFormatted
-            ? `${day.totalWorkedFormatted} trabajadas`
-            : 'Sin jornada completa';
+          if (!res.ok) {
+            container.innerHTML =
+              '<p class="text-rose-500 text-sm">Error al cargar el historial.</p>';
+            return;
+          }
 
-          const header = document.createElement('div');
-          header.className = 'flex justify-between items-center mb-1';
-          header.innerHTML = `
+          const history = await res.json();
+          if (!history.length) {
+            container.innerHTML =
+              '<p class="text-slate-400 text-sm">Sin fichajes recientes.</p>';
+            return;
+          }
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "space-y-3";
+
+          history.forEach((day) => {
+            const card = document.createElement("div");
+            card.className =
+              "bg-white rounded-lg border border-slate-200 px-3 py-2";
+
+            const dateObj = new Date(day.date + "T00:00:00");
+            const dateLabel = dateObj.toLocaleDateString("es-ES", {
+              weekday: "short",
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            });
+
+            const workedLabel = day.totalWorkedFormatted
+              ? `${day.totalWorkedFormatted} trabajadas`
+              : "Sin jornada completa";
+
+            const header = document.createElement("div");
+            header.className = "flex justify-between items-center mb-1";
+            header.innerHTML = `
             <span class="font-semibold text-slate-700">${dateLabel}</span>
             <span class="text-xs text-slate-500">${workedLabel}</span>
           `;
 
-          const body = document.createElement('div');
-          body.className = 'text-xs text-slate-600';
+            const body = document.createElement("div");
+            body.className = "text-xs text-slate-600";
 
-          const timesInfo = `
+            const timesInfo = `
             <div class="text-slate-500 mb-1">
               Entrada: ${
-                day.firstClockIn ? formatTime(day.firstClockIn) : '--:--:--'
+                day.firstClockIn ? formatTime(day.firstClockIn) : "--:--:--"
               } ·
               Salida: ${
-                day.lastClockOut ? formatTime(day.lastClockOut) : '--:--:--'
+                day.lastClockOut ? formatTime(day.lastClockOut) : "--:--:--"
               }
             </div>
           `;
 
-          let pausesHtml = '';
-          if (day.pauses && day.pauses.length) {
-            const pausesLines = day.pauses
-              .map(
-                (p) =>
-                  `${formatTime(p.start)} - ${formatTime(p.end)} (${
-                    p.durationFormatted ||
-                    `${String(p.minutes).padStart(2, '0')}:${String(
-                      p.seconds || 0
-                    ).padStart(2, '0')}`
-                  } min${p.reason ? ', ' + p.reason : ''})`
-              )
-              .join('<br/>');
+            let pausesHtml = "";
+            if (day.pauses && day.pauses.length) {
+              const pausesLines = day.pauses
+                .map(
+                  (p) =>
+                    `${formatTime(p.start)} - ${formatTime(p.end)} (${
+                      p.durationFormatted ||
+                      `${String(p.minutes).padStart(2, "0")}:${String(
+                        p.seconds || 0
+                      ).padStart(2, "0")}`
+                    } min${p.reason ? ", " + p.reason : ""})`
+                )
+                .join("<br/>");
 
-            pausesHtml = `
+              pausesHtml = `
               <div class="mt-1">
                 <span class="font-medium">Pausas:</span><br/>
                 ${pausesLines}
               </div>
             `;
-          } else {
-            pausesHtml =
-              '<div class="mt-1 text-slate-400">Sin pausas registradas.</div>';
-          }
+            } else {
+              pausesHtml =
+                '<div class="mt-1 text-slate-400">Sin pausas registradas.</div>';
+            }
 
-          body.innerHTML = timesInfo + pausesHtml;
+            body.innerHTML = timesInfo + pausesHtml;
 
-          card.appendChild(header);
-          card.appendChild(body);
-          wrapper.appendChild(card);
-        });
+            card.appendChild(header);
+            card.appendChild(body);
+            wrapper.appendChild(card);
+          });
 
-        container.innerHTML = '';
-        container.appendChild(wrapper);
-      } catch (err) {
-        console.error(err);
-        container.innerHTML =
-          '<p class="text-rose-500 text-sm">Error al conectar con el servidor.</p>';
-      }
-    }
-
-    // 🧠 Estado visual + reglas de botones
-    function updateStatus(lastEvent) {
-      const badge = document.getElementById('statusBadge');
-      const lastActionEl = document.getElementById('lastAction');
-
-      const btnClockIn = document.getElementById('btnClockIn');
-      const btnClockOut = document.getElementById('btnClockOut');
-      const btnBreakStart = document.getElementById('btnBreakStart');
-      const btnBreakEnd = document.getElementById('btnBreakEnd');
-
-      const user = getUserInfo();
-
-      let scheduledStart = null;
-      let scheduledEnd = null;
-
-      if (user && typeof user.workStartMinutes === 'number') {
-        scheduledStart = getTodayAtMinutes(user.workStartMinutes);
-      }
-      if (user && typeof user.workEndMinutes === 'number') {
-        scheduledEnd = getTodayAtMinutes(user.workEndMinutes);
-      }
-
-      const now = new Date();
-
-      const typeLabels = {
-        CLOCK_IN: 'Entrada',
-        BREAK_START: 'Inicio de pausa',
-        BREAK_END: 'Fin de pausa',
-        CLOCK_OUT: 'Salida',
-      };
-
-      if (!lastEvent) {
-        badge.textContent = 'Fuera de jornada';
-        badge.className =
-          'px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700';
-        lastActionEl.textContent = '-';
-
-        let canClockIn = true;
-        if (scheduledStart) {
-          const earliest = new Date(scheduledStart.getTime() - 30 * 60 * 1000);
-          if (now < earliest) {
-            canClockIn = false;
-            badge.textContent = 'Fuera de horario';
-            badge.className =
-              'px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-500';
-          }
+          container.innerHTML = "";
+          container.appendChild(wrapper);
+        } catch (err) {
+          console.error(err);
+          container.innerHTML =
+            '<p class="text-rose-500 text-sm">Error al conectar con el servidor.</p>';
         }
-
-        btnClockIn.disabled = !canClockIn;
-        btnClockOut.disabled = true;
-        btnBreakStart.disabled = true;
-        btnBreakEnd.disabled = true;
-        return;
       }
 
-      lastActionEl.textContent = `${typeLabels[lastEvent.type] || lastEvent.type} · ${formatTime(
-        lastEvent.timestamp
-      )}`;
+      // 🧠 Estado visual + reglas de botones
+      function updateStatus(lastEvent) {
+        const badge = document.getElementById("statusBadge");
+        const lastActionEl = document.getElementById("lastAction");
 
-      switch (lastEvent.type) {
-        case 'CLOCK_IN':
-        case 'BREAK_END':
-          badge.textContent = 'Trabajando';
-          badge.className =
-            'px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700';
+        const btnClockIn = document.getElementById("btnClockIn");
+        const btnClockOut = document.getElementById("btnClockOut");
+        const btnBreakStart = document.getElementById("btnBreakStart");
+        const btnBreakEnd = document.getElementById("btnBreakEnd");
 
-          btnClockIn.disabled = true;
-          btnClockOut.disabled = false;
-          btnBreakStart.disabled = false;
-          btnBreakEnd.disabled = true;
-          break;
-
-        case 'BREAK_START':
-          badge.textContent = 'En pausa';
-          badge.className =
-            'px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700';
-
-          btnClockIn.disabled = true;
-          btnClockOut.disabled = false;
-          btnBreakStart.disabled = true;
-          btnBreakEnd.disabled = false;
-          break;
-
-        case 'CLOCK_OUT':
-          badge.textContent = 'Jornada finalizada';
-          badge.className =
-            'px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700';
-
-          btnClockIn.disabled = true;
-          btnClockOut.disabled = true;
-          btnBreakStart.disabled = true;
-          btnBreakEnd.disabled = true;
-          break;
-      }
-    }
-
-    // 📡 Enviar evento
-    async function sendEvent(endpoint, extraBody = {}) {
-      const res = await fetch(API_BASE_URL + endpoint, {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + getToken(),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(extraBody),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        alert('Error: ' + (data.message || 'No se pudo registrar el evento'));
-        return;
-      }
-
-      await loadTodayEvents();
-      await loadHistory();
-    }
-
-    // 🚀 INIT
-    document.addEventListener('DOMContentLoaded', () => {
-      const token = getToken();
-      const user = getUserInfo();
-
-      if (!token || !user) {
-        window.location.href = '/login.html';
-        return;
-      }
-
-      // nombre + rol + horario
-      const userInfoText = document.getElementById('userInfoText');
-      let info = `${user.fullName || user.email} · ${user.role}`;
-      if (user.workStartTime && user.workEndTime) {
-        info += ` · Horario: ${user.workStartTime} - ${user.workEndTime}`;
-      }
-      userInfoText.textContent = info;
-
-      document.getElementById('btnLogout').addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userInfo');
-        window.location.href = '/login.html';
-      });
-
-      startClock();
-      loadTodayEvents();
-      loadHistory();
-
-      document.getElementById('btnClockIn').addEventListener('click', () => {
-        sendEvent('/time/clock-in');
-      });
-
-      document.getElementById('btnBreakStart').addEventListener('click', () => {
-        const reason = document.getElementById('pauseReason').value || null;
-        sendEvent('/time/break-start', { reason });
-      });
-
-      document.getElementById('btnBreakEnd').addEventListener('click', () => {
-        sendEvent('/time/break-end');
-      });
-
-      document.getElementById('btnClockOut').addEventListener('click', () => {
         const user = getUserInfo();
+
+        let scheduledStart = null;
         let scheduledEnd = null;
 
-        if (user && typeof user.workEndMinutes === 'number') {
+        if (user && typeof user.workStartMinutes === "number") {
+          scheduledStart = getTodayAtMinutes(user.workStartMinutes);
+        }
+        if (user && typeof user.workEndMinutes === "number") {
           scheduledEnd = getTodayAtMinutes(user.workEndMinutes);
         }
 
         const now = new Date();
 
-        if (scheduledEnd && now < scheduledEnd) {
-          const reason = prompt(
-            'Estás finalizando antes de tu hora de salida.\nPor favor, indica el motivo:'
+        const typeLabels = {
+          CLOCK_IN: "Entrada",
+          BREAK_START: "Inicio de pausa",
+          BREAK_END: "Fin de pausa",
+          CLOCK_OUT: "Salida",
+        };
+
+        if (!lastEvent) {
+          badge.textContent = "Fuera de jornada";
+          badge.className =
+            "px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700";
+          lastActionEl.textContent = "-";
+
+          let canClockIn = true;
+          if (scheduledStart) {
+            const earliest = new Date(
+              scheduledStart.getTime() - 30 * 60 * 1000
+            );
+            if (now < earliest) {
+              canClockIn = false;
+              badge.textContent = "Fuera de horario";
+              badge.className =
+                "px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-500";
+            }
+          }
+
+          btnClockIn.disabled = !canClockIn;
+          btnClockOut.disabled = true;
+          btnBreakStart.disabled = true;
+          btnBreakEnd.disabled = true;
+          return;
+        }
+
+        lastActionEl.textContent = `${
+          typeLabels[lastEvent.type] || lastEvent.type
+        } · ${formatTime(lastEvent.timestamp)}`;
+
+        switch (lastEvent.type) {
+          case "CLOCK_IN":
+          case "BREAK_END":
+            badge.textContent = "Trabajando";
+            badge.className =
+              "px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700";
+
+            btnClockIn.disabled = true;
+            btnClockOut.disabled = false;
+            btnBreakStart.disabled = false;
+            btnBreakEnd.disabled = true;
+            break;
+
+          case "BREAK_START":
+            badge.textContent = "En pausa";
+            badge.className =
+              "px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700";
+
+            btnClockIn.disabled = true;
+            btnClockOut.disabled = false;
+            btnBreakStart.disabled = true;
+            btnBreakEnd.disabled = false;
+            break;
+
+          case "CLOCK_OUT":
+            badge.textContent = "Jornada finalizada";
+            badge.className =
+              "px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700";
+
+            btnClockIn.disabled = true;
+            btnClockOut.disabled = true;
+            btnBreakStart.disabled = true;
+            btnBreakEnd.disabled = true;
+            break;
+        }
+      }
+
+      // 📡 Enviar evento
+      async function sendEvent(endpoint, extraBody = {}) {
+        const res = await fetch(API_BASE_URL + endpoint, {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + getToken(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(extraBody),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          alert("Error: " + (data.message || "No se pudo registrar el evento"));
+          return;
+        }
+
+        await loadTodayEvents();
+        await loadHistory();
+      }
+
+      // 🚀 INIT
+      function formatDateShortES(isoString) {
+        const d = new Date(isoString);
+        if (Number.isNaN(d.getTime())) return "-";
+        return d.toLocaleDateString("es-ES", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        });
+      }
+
+      function mapAbsenceTypeLabel(type) {
+        const map = {
+          VACATION: "Vacaciones",
+          SICK_LEAVE: "Baja médica",
+          PAID_LEAVE: "Permiso retribuido",
+          UNPAID_LEAVE: "Permiso sin sueldo",
+          JUSTIFIED_OTHER: "Otra justificada",
+          UNJUSTIFIED: "No justificada",
+        };
+        return map[type] || type;
+      }
+
+      function mapAbsenceStatusBadge(status) {
+        switch (status) {
+          case "APPROVED":
+            return {
+              text: "Aprobada",
+              cls: "bg-emerald-50 text-emerald-700",
+            };
+          case "REJECTED":
+            return {
+              text: "Rechazada",
+              cls: "bg-rose-50 text-rose-700",
+            };
+          case "PENDING":
+          default:
+            return {
+              text: "Pendiente",
+              cls: "bg-amber-50 text-amber-700",
+            };
+        }
+      }
+
+      async function loadMyAbsences() {
+        const container = document.getElementById("myAbsencesContainer");
+        if (!container) return;
+
+        container.textContent = "Cargando...";
+
+        try {
+          const res = await fetch(
+            API_BASE_URL + "/worker/absences/my-requests",
+            {
+              headers: { Authorization: "Bearer " + getToken() },
+            }
           );
-          if (!reason || !reason.trim()) {
+
+          if (!res.ok) {
+            container.textContent = "Error al cargar ausencias.";
             return;
           }
-          sendEvent('/time/clock-out', { reason: reason.trim() });
-        } else {
-          sendEvent('/time/clock-out');
+
+          const items = await res.json();
+          if (!items.length) {
+            container.textContent = "Aún no has registrado ausencias.";
+            return;
+          }
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "divide-y divide-slate-100";
+
+          items.forEach((a) => {
+            const row = document.createElement("div");
+            row.className =
+              "py-2 flex items-start justify-between gap-3 text-[11px]";
+
+            const left = document.createElement("div");
+            left.innerHTML = `
+            <div class="font-medium text-slate-700">
+              ${formatDateShortES(a.startDate)} - ${formatDateShortES(
+              a.endDate
+            )} · ${mapAbsenceTypeLabel(a.requestedType)}
+            </div>
+            ${
+              a.reason
+                ? `<div class="text-slate-500 mt-0.5">${a.reason}</div>`
+                : ""
+            }
+          `;
+
+            const statusInfo = mapAbsenceStatusBadge(a.status);
+            const right = document.createElement("span");
+            right.className =
+              "px-2 py-1 rounded-full text-[10px] font-semibold " +
+              statusInfo.cls;
+            right.textContent = statusInfo.text;
+
+            row.appendChild(left);
+            row.appendChild(right);
+            wrapper.appendChild(row);
+          });
+
+          container.innerHTML = "";
+          container.appendChild(wrapper);
+        } catch (err) {
+          console.error(err);
+          container.textContent = "Error de conexión al cargar ausencias.";
         }
+      }
+
+      async function sendAbsenceRequest() {
+        const type = document.getElementById("absenceType")?.value;
+        const from = document.getElementById("absenceFrom")?.value;
+        const to = document.getElementById("absenceTo")?.value;
+        const reason =
+          document.getElementById("absenceReason")?.value.trim() || "";
+
+        if (!from || !to) {
+          alert("Selecciona fecha desde y hasta.");
+          return;
+        }
+
+        try {
+          const res = await fetch(API_BASE_URL + "/worker/absences/requests", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + getToken(),
+            },
+            body: JSON.stringify({
+              type,
+              startDate: from, // "YYYY-MM-DD"
+              endDate: to,
+              reason,
+            }),
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            alert(data.message || "Error al registrar la ausencia.");
+            return;
+          }
+
+          alert("Solicitud de ausencia registrada correctamente.");
+          // limpiar solo motivo si quieres, o todo:
+          // document.getElementById('absenceReason').value = '';
+          await loadMyAbsences();
+        } catch (err) {
+          console.error(err);
+          alert("Error de conexión al registrar la ausencia.");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const token = getToken();
+        const user = getUserInfo();
+
+        if (!token || !user) {
+          window.location.href = "/login.html";
+          return;
+        }
+
+        // nombre + rol + horario
+        const userInfoText = document.getElementById("userInfoText");
+        let info = `${user.fullName || user.email} · ${user.role}`;
+        if (user.workStartTime && user.workEndTime) {
+          info += ` · Horario: ${user.workStartTime} - ${user.workEndTime}`;
+        }
+        userInfoText.textContent = info;
+
+        document.getElementById("btnLogout").addEventListener("click", () => {
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("userInfo");
+          window.location.href = "/login.html";
+        });
+
+        startClock();
+        loadTodayEvents();
+        loadHistory();
+
+        document.getElementById("btnClockIn").addEventListener("click", () => {
+          sendEvent("/time/clock-in");
+        });
+
+        document
+          .getElementById("btnBreakStart")
+          .addEventListener("click", () => {
+            const reason = document.getElementById("pauseReason").value || null;
+            sendEvent("/time/break-start", { reason });
+          });
+
+        document.getElementById("btnBreakEnd").addEventListener("click", () => {
+          sendEvent("/time/break-end");
+        });
+
+        document.getElementById("btnClockOut").addEventListener("click", () => {
+          const user = getUserInfo();
+          let scheduledEnd = null;
+
+          if (user && typeof user.workEndMinutes === "number") {
+            scheduledEnd = getTodayAtMinutes(user.workEndMinutes);
+          }
+
+          const now = new Date();
+
+          if (scheduledEnd && now < scheduledEnd) {
+            const reason = prompt(
+              "Estás finalizando antes de tu hora de salida.\nPor favor, indica el motivo:"
+            );
+            if (!reason || !reason.trim()) {
+              return;
+            }
+            sendEvent("/time/clock-out", { reason: reason.trim() });
+          } else {
+            sendEvent("/time/clock-out");
+          }
+        });
+        const btnRequestAbsence = document.getElementById("btnRequestAbsence");
+        if (btnRequestAbsence) {
+          btnRequestAbsence.addEventListener("click", sendAbsenceRequest);
+        }
+
+        // cargar ausencias del trabajador
+        loadMyAbsences();
       });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

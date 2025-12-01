@@ -15,6 +15,7 @@ const adminReportsRoutes = require('./modules/admin/reports/reports.routes');
 const adminLogsRoutes = require('./modules/admin/logs/logs.routes');
 //super
 const superCompaniesRoutes = require('./modules/super/companies/companies.routes');
+const absencesRoutes = require('./modules/absences/absences.routes');
 
 const app = express();
 
@@ -29,7 +30,9 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', env: env.NODE_ENV });
 });
 
-// Rutas API
+// Rutas API// Ausencias de trabajador
+app.use('/api/worker/absences', absencesRoutes);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/time', timeRoutes);
 
@@ -47,3 +50,4 @@ app.use((req, res) => {
 app.listen(env.PORT, () => {
   console.log(`✅ API escuchando en http://localhost:${env.PORT}`);
 });
+ 

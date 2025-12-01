@@ -38,6 +38,11 @@ async function listWorkers({ requester, includeInactive = false }) {
 }
 
 async function createWorker({ requester, data }) {
+    if (!requester || ![Role.CLIENT_ADMIN, Role.SUPER_ADMIN].includes(requester.role)) {
+    const error = new Error('No autorizado para crear trabajadores');
+    error.status = 403;
+    throw error;
+  }
   const companyId = resolveCompanyIdFromUser(requester, data.companyId);
   if (!companyId) {
     throw { status: 400, message: 'No se ha podido determinar la empresa.' };

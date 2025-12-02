@@ -13,6 +13,8 @@ const timeRoutes = require('./modules/time/time.routes');
 const adminWorkersRoutes = require('./modules/admin/workers/workers.routes');
 const adminReportsRoutes = require('./modules/admin/reports/reports.routes');
 const adminLogsRoutes = require('./modules/admin/logs/logs.routes');
+const adminAbsencesRoutes = require('./modules/admin/absences/absences.routes'); // <-- DEBE ESTAR AQUÍ
+//super
 //super
 const superCompaniesRoutes = require('./modules/super/companies/companies.routes');
 const absencesRoutes = require('./modules/absences/absences.routes');
@@ -45,6 +47,7 @@ app.use('/api/time', timeRoutes);
 app.use('/api/admin/workers', adminWorkersRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/logs', adminLogsRoutes);
+app.use('/api/admin/absences', adminAbsencesRoutes);
 //super
 app.use('/api/super/companies', superCompaniesRoutes);
 // 404 por defecto

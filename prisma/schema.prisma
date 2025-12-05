@@ -174,10 +174,10 @@ model MissingClockOut {
   company          Company           @relation(fields: [companyId], references: [id])
   companyId        String
   
-  worker           User              @relation(fields: [workerId], references: [id])
+  worker           User              @relation("WorkerRelation", fields: [workerId], references: [id])
   workerId         String
   
-  adminApprover    User?             @relation(fields: [adminApproverId], references: [id])
+  adminApprover    User?             @relation("AdminRelation", fields: [adminApproverId], references: [id])
   adminApproverId  String?
   
   createdAt        DateTime          @default(now())

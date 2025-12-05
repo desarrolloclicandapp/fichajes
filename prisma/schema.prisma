@@ -60,6 +60,7 @@ model Company {
   absenceRequests  AbsenceRequest[]
   auditLogs        AuditLog[]
   holidays         CompanyHoliday[]
+missingClockOuts MissingClockOut[]
 }
 
 model User {

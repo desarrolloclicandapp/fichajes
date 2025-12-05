@@ -38,6 +38,14 @@ enum AbsenceType {
   UNJUSTIFIED
 }
 
+enum CorrectionState {
+  PENDING_SYSTEM_INSERT // (Simulado por un trabajo programado)
+  PENDING_ADMIN_REVIEW // Sistema insertó salida, Admin debe revisar/aprobar corrección
+  PENDING_WORKER_INPUT // Admin aprobó, trabajador debe ingresar hora
+  COMPLETED // Corrección finalizada
+  REJECTED // Admin rechazó la corrección
+}
+
 model Company {
   id          String   @id @default(uuid())
   name        String
@@ -152,4 +160,28 @@ model CompanyHoliday {
   createdAt DateTime @default(now())
   @@unique([companyId, date])
   
+}
+
+model MissingClockOut {
+  id               String            @id @default(uuid())
+  date             DateTime          // Fecha de la jornada con el fichaje faltante
+  status           CorrectionState   @default(PENDING_ADMIN_REVIEW)
+  provisionalTime  DateTime?         // Hora de salida predefinida por el sistema (ej: 17:00)
+  manualTime       DateTime?         // Hora de salida final ingresada por el trabajador
+  reason           String?           // Motivo de la corrección (ingresado por el trabajador)
+  adminNotes       String?           // Notas/instrucciones del administrador
+  
+  company          Company           @relation(fields: [companyId], references: [id])
+  companyId        String
+  
+  worker           User              @relation(fields: [workerId], references: [id])
+  workerId         String
+  
+  adminApprover    User?             @relation(fields: [adminApproverId], references: [id])
+  adminApproverId  String?
+  
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([workerId, date])
 }

@@ -1,232 +1,280 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Admin - Trabajadores</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-100 min-h-screen">
-  <div class="max-w-6xl mx-auto p-4 md:p-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-      <div>
-        <img 
-        src="logo-clicandapp.png" 
-        alt="Logo Clic&App" 
-        class="h-20" 
-    />
-        <h1 class="text-1xl font-semibold text-slate-800">
-          Panel de empresa
-        </h1>
-        <p id="companyInfoText" class="text-sm text-slate-500">
-          Cargando empresa...
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
-        <a
-          href="/admin-reports.html"
-          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-        >
-          Ver reportes
-        </a>
-          <a
-    href="/admin-absences.html"
-    class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-  >
-    Gestionar ausencias
-  </a>
-          <a
-    href="/admin-logs.html"
-    class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-  >
-    Ver logs
-  </a>
-               <a
-          href="/manuales/Admindeempresa.pdf"
-          download="Manual de usuario.pdf"
-          class="text-xs px-3 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-        >
-          Manual de usuario
-        </a>      
-  <button
-          id="btnLogout"
-          class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-        >
-          Cerrar sesión
-        </button>
-      </div>
-    </div>
-
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-      <div>
-        <h2 class="text-lg font-semibold text-slate-800">Trabajadores</h2>
-        <p class="text-xs text-slate-500">
-          Gestiona los empleados, sus horarios y días de trabajo.
-        </p>
-      </div>
-      <button
-        id="btnNewWorker"
-        class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition"
+  <head>
+    <meta charset="UTF-8" />
+    <title>Admin - Trabajadores</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 min-h-screen">
+    <div class="max-w-6xl mx-auto p-4 md:p-6">
+      <div
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
       >
-        + Nuevo trabajador
-      </button>
-    </div>
-
-    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <div class="flex items-center gap-2 text-xs text-slate-500">
-          <span id="workersCountText">Cargando...</span>
+        <div>
+          <img src="logo-clicandapp.png" alt="Logo Clic&App" class="h-20" />
+          <h1 class="text-1xl font-semibold text-slate-800">
+            Panel de empresa
+          </h1>
+          <p id="companyInfoText" class="text-sm text-slate-500">
+            Cargando empresa...
+          </p>
         </div>
-        <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer">
-          <input type="checkbox" id="chkShowInactive" class="rounded border-slate-300">
-          Mostrar inactivos
-        </label>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 text-xs uppercase text-slate-500">
-            <tr>
-              <th class="px-4 py-2 text-left">Nombre</th>
-              <th class="px-4 py-2 text-left">Email</th>
-              <th class="px-4 py-2 text-left">Horario</th>
-              <th class="px-4 py-2 text-left">Días</th>
-              <th class="px-4 py-2 text-left">Estado</th>
-              <th class="px-4 py-2 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="workersTableBody" class="divide-y divide-slate-100">
-            <tr>
-              <td colspan="6" class="px-4 py-4 text-center text-slate-400 text-sm">
-                Cargando trabajadores...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div
-      id="workerModal"
-      class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden"
-    >
-      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 id="workerModalTitle" class="text-lg font-semibold text-slate-800">
-            Nuevo trabajador
-          </h3>
-          <button
-            id="btnCloseModal"
-            class="text-slate-400 hover:text-slate-600 text-xl leading-none"
+        <div class="flex items-center gap-3">
+          <a
+            href="/admin-reports.html"
+            class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
           >
-            ×
+            Ver reportes
+          </a>
+          <a
+            href="/admin-absences.html"
+            class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+          >
+            Gestionar ausencias
+          </a>
+          <a
+            href="/admin-logs.html"
+            class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+          >
+            Ver logs
+          </a>
+          <a
+            href="/manuales/Admindeempresa.pdf"
+            download="Manual de usuario.pdf"
+            class="text-xs px-3 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+          >
+            Manual de usuario
+          </a>
+          <button
+            id="btnLogout"
+            class="text-xs px-3 py-2 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+          >
+            Cerrar sesión
           </button>
         </div>
+      </div>
 
-        <form id="workerForm" class="space-y-4">
-          <input type="hidden" id="workerId" />
+      <div
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4"
+      >
+        <div>
+          <h2 class="text-lg font-semibold text-slate-800">Trabajadores</h2>
+          <p class="text-xs text-slate-500">
+            Gestiona los empleados, sus horarios y días de trabajo.
+          </p>
+        </div>
+        <button
+          id="btnNewWorker"
+          class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition"
+        >
+          + Nuevo trabajador
+        </button>
+      </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-medium text-slate-600 mb-1">Nombre completo</label>
-              <input
-                id="workerFullName"
-                type="text"
-                class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Nombre y apellidos"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-slate-600 mb-1">Email</label>
-              <input
-                id="workerEmail"
-                type="email"
-                class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="correo@empresa.com"
-              />
-            </div>
+      <div
+        class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+      >
+        <div
+          class="px-4 py-3 border-b border-slate-200 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <span id="workersCountText">Cargando...</span>
           </div>
+          <label
+            class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              id="chkShowInactive"
+              class="rounded border-slate-300"
+            />
+            Mostrar inactivos
+          </label>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th class="px-4 py-2 text-left">Nombre</th>
+                <th class="px-4 py-2 text-left">Email</th>
+                <th class="px-4 py-2 text-left">Horario</th>
+                <th class="px-4 py-2 text-left">Días</th>
+                <th class="px-4 py-2 text-left">Estado</th>
+                <th class="px-4 py-2 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="workersTableBody" class="divide-y divide-slate-100">
+              <tr>
+                <td
+                  colspan="6"
+                  class="px-4 py-4 text-center text-slate-400 text-sm"
+                >
+                  Cargando trabajadores...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-medium text-slate-600 mb-1">Hora inicio</label>
-              <input
-                id="workStartTime"
-                type="time"
-                class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-slate-600 mb-1">Hora fin</label>
-              <input
-                id="workEndTime"
-                type="time"
-                class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-600 mb-1">Días de trabajo</label>
-            <div class="flex flex-wrap gap-2 text-xs">
-              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
-                <input type="checkbox" class="dayCheck" data-day="L">
-                <span>L</span>
-              </label>
-              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
-                <input type="checkbox" class="dayCheck" data-day="M">
-                <span>M</span>
-              </label>
-              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
-                <input type="checkbox" class="dayCheck" data-day="X">
-                <span>X</span>
-              </label>
-              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
-                <input type="checkbox" class="dayCheck" data-day="J">
-                <span>J</span>
-              </label>
-              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
-                <input type="checkbox" class="dayCheck" data-day="V">
-                <span>V</span>
-              </label>
-              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
-                <input type="checkbox" class="dayCheck" data-day="S">
-                <span>S</span>
-              </label>
-              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer">
-                <input type="checkbox" class="dayCheck" data-day="D">
-                <span>D</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <label class="flex items-center gap-2 text-xs text-slate-600">
-              <input type="checkbox" id="workerIsActive" class="rounded border-slate-300" checked>
-              Trabajador activo
-            </label>
-            <span id="workerExtraInfo" class="text-[11px] text-slate-400"></span>
-          </div>
-
-          <div class="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              id="btnCancelModal"
-              class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 border border-slate-300 hover:bg-slate-50"
+      <div
+        id="workerModal"
+        class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden"
+      >
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              id="workerModalTitle"
+              class="text-lg font-semibold text-slate-800"
             >
-              Cancelar
-            </button>
+              Nuevo trabajador
+            </h3>
             <button
-              type="submit"
-              class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+              id="btnCloseModal"
+              class="text-slate-400 hover:text-slate-600 text-xl leading-none"
             >
-              Guardar
+              ×
             </button>
           </div>
-        </form>
+
+          <form id="workerForm" class="space-y-4">
+            <input type="hidden" id="workerId" />
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1"
+                  >Nombre completo</label
+                >
+                <input
+                  id="workerFullName"
+                  type="text"
+                  class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Nombre y apellidos"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1"
+                  >Email</label
+                >
+                <input
+                  id="workerEmail"
+                  type="email"
+                  class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="correo@empresa.com"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1"
+                  >Hora inicio</label
+                >
+                <input
+                  id="workStartTime"
+                  type="time"
+                  class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1"
+                  >Hora fin</label
+                >
+                <input
+                  id="workEndTime"
+                  type="time"
+                  class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1"
+                >Días de trabajo</label
+              >
+              <div class="flex flex-wrap gap-2 text-xs">
+                <label
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer"
+                >
+                  <input type="checkbox" class="dayCheck" data-day="L" />
+                  <span>L</span>
+                </label>
+                <label
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer"
+                >
+                  <input type="checkbox" class="dayCheck" data-day="M" />
+                  <span>M</span>
+                </label>
+                <label
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer"
+                >
+                  <input type="checkbox" class="dayCheck" data-day="X" />
+                  <span>X</span>
+                </label>
+                <label
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer"
+                >
+                  <input type="checkbox" class="dayCheck" data-day="J" />
+                  <span>J</span>
+                </label>
+                <label
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer"
+                >
+                  <input type="checkbox" class="dayCheck" data-day="V" />
+                  <span>V</span>
+                </label>
+                <label
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer"
+                >
+                  <input type="checkbox" class="dayCheck" data-day="S" />
+                  <span>S</span>
+                </label>
+                <label
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-300 cursor-pointer"
+                >
+                  <input type="checkbox" class="dayCheck" data-day="D" />
+                  <span>D</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <label class="flex items-center gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  id="workerIsActive"
+                  class="rounded border-slate-300"
+                  checked
+                />
+                Trabajador activo
+              </label>
+              <span
+                id="workerExtraInfo"
+                class="text-[11px] text-slate-400"
+              ></span>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                id="btnCancelModal"
+                class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 border border-slate-300 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                Guardar
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script>
+    <script>
     const API_BASE_URL = '/api';
 
     // 🆕 Mapeo de Roles
@@ -249,6 +297,34 @@
         return null;
       }
     }
+    
+    // 🆕 FUNCIÓN CLAVE: Fetch Protegido con Redirección a Login en caso de 401
+    async function authFetch(endpoint, options = {}) {
+        const token = getToken(); 
+        
+        if (token) {
+            options.headers = {
+                ...options.headers,
+                Authorization: `Bearer ${token}`,
+            };
+        }
+
+        // Ejecutar la petición nativa
+        const res = await fetch(API_BASE_URL + endpoint, options);
+
+        // Intercepta 401 y redirige a login
+        if (res.status === 401) {
+            console.warn("Token expirado o inválido. Forzando cierre de sesión.");
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("userInfo");
+            window.location.href = "/login.html"; 
+            // Lanzar error para detener la ejecución de la función que llamó a authFetch
+            throw new Error("Sesión expirada. Redirigiendo a login."); 
+        }
+        
+        return res;
+    }
+
 
     function minutesToHHMM(minutes) {
       if (minutes == null) return '';
@@ -280,6 +356,7 @@
       });
     }
 
+    // 1. FUNCIÓN loadWorkers
     async function loadWorkers() {
       const tbody = document.getElementById('workersTableBody');
       const showInactive = document.getElementById('chkShowInactive').checked;
@@ -293,11 +370,9 @@
       `;
 
       try {
-        const res = await fetch(
-          API_BASE_URL + '/admin/workers' + (showInactive ? '?includeInactive=true' : ''),
-          {
-            headers: { Authorization: 'Bearer ' + getToken() },
-          }
+        // ⬅️ Uso de authFetch
+        const res = await authFetch(
+          '/admin/workers' + (showInactive ? '?includeInactive=true' : '')
         );
 
         if (!res.ok) {
@@ -312,7 +387,8 @@
         }
 
         const workers = await res.json();
-
+        // ... (resto de la lógica de renderizado)
+        
         document.getElementById('workersCountText').textContent =
           workers.length === 0
             ? 'Sin trabajadores.'
@@ -368,17 +444,15 @@
           btn.addEventListener('click', () => openWorkerModal(btn.dataset.id));
         });
       } catch (err) {
-        console.error(err);
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="px-4 py-4 text-center text-rose-500 text-sm">
-              Error al conectar con el servidor.
-            </td>
-          </tr>
-        `;
+        // El error de sesión expirada se maneja en authFetch, aquí solo errores de conexión o API
+        if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+             console.error(err);
+        }
+        // Si el token expiró, el catch se ejecuta, pero la redirección ya ocurrió.
       }
     }
 
+    // 2. FUNCIÓN openWorkerModal
     function openWorkerModal(workerId = null) {
       const modal = document.getElementById('workerModal');
       const title = document.getElementById('workerModalTitle');
@@ -389,7 +463,7 @@
       document.getElementById('workerId').value = workerId || '';
       extraInfo.textContent = '';
       document.getElementById('workerIsActive').checked = true;
-      document.getElementById('workerEmail').disabled = !!workerId; // no cambiar email al editar
+      document.getElementById('workerEmail').disabled = !!workerId;
 
       if (!workerId) {
         title.textContent = 'Nuevo trabajador';
@@ -401,11 +475,12 @@
       title.textContent = 'Editar trabajador';
       modal.classList.remove('hidden');
 
-      // cargar datos
-      fetch(API_BASE_URL + '/admin/workers/' + workerId, {
-        headers: { Authorization: 'Bearer ' + getToken() },
-      })
-        .then((res) => res.json())
+      // ⬅️ Uso de authFetch
+      authFetch('/admin/workers/' + workerId)
+        .then((res) => {
+             if (!res.ok) throw new Error("Error al cargar trabajador (API).");
+             return res.json();
+        })
         .then((w) => {
           document.getElementById('workerFullName').value = w.fullName || '';
           document.getElementById('workerEmail').value = w.email;
@@ -415,8 +490,11 @@
           document.getElementById('workerIsActive').checked = w.isActive;
         })
         .catch((err) => {
-          console.error(err);
-          extraInfo.textContent = 'Error al cargar datos del trabajador.';
+          // El error de sesión expirada se maneja en authFetch, aquí solo errores de conexión o API
+          if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+             console.error(err);
+             extraInfo.textContent = 'Error al cargar datos del trabajador.';
+          }
         });
     }
 
@@ -425,6 +503,7 @@
       modal.classList.add('hidden');
     }
 
+    // 3. FUNCIÓN saveWorker
     async function saveWorker(e) {
       e.preventDefault();
 
@@ -449,23 +528,23 @@
         isActive,
       };
 
-      let url = API_BASE_URL + '/admin/workers';
+      let url = '/admin/workers';
       let method = 'POST';
 
       if (id) {
-        url = API_BASE_URL + '/admin/workers/' + id;
+        url = '/admin/workers/' + id;
         method = 'PUT';
-        payload.email = undefined; // email no se actualiza
+        payload.email = undefined;
       } else {
         payload.email = email;
       }
 
       try {
-        const res = await fetch(url, {
+        // ⬅️ Uso de authFetch
+        const res = await authFetch(url, {
           method,
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + getToken(),
           },
           body: JSON.stringify(payload),
         });
@@ -480,13 +559,17 @@
         closeWorkerModal();
         await loadWorkers();
       } catch (err) {
-        console.error(err);
-        alert('Error de conexión al guardar trabajador');
+        if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+           console.error(err);
+           alert('Error de conexión al guardar trabajador');
+        }
       }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       const user = getUserInfo();
+      // ... (Resto de la lógica INIT, que no necesita fetch)
+      
       if (!getToken() || !user || (user.role !== 'CLIENT_ADMIN' && user.role !== 'SUPER_ADMIN')) {
         window.location.href = '/login.html';
         return;
@@ -494,7 +577,6 @@
 
       const companyText = document.getElementById('companyInfoText');
       
-      // 🆕 Visualización del Rol traducido
       const userRole = ROLE_MAP[user.role] || user.role;
       companyText.textContent =
         (user.companyName || 'Empresa sin nombre') + ' · ' + userRole;
@@ -521,5 +603,5 @@
       loadWorkers();
     });
   </script>
-</body>
+  </body>
 </html>

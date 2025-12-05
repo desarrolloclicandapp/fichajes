@@ -255,7 +255,30 @@
 
   <script>
     const API_BASE_URL = '/api';
+// 🆕 Función de Fetch Protegida con Redirección a Login en caso de 401
+async function authFetch(endpoint, options = {}) {
+    const token = getToken();
+    
+    if (token) {
+        options.headers = {
+            ...options.headers,
+            Authorization: `Bearer ${token}`,
+        };
+    }
 
+    const res = await fetch(API_BASE_URL + endpoint, options);
+
+    // Intercepta 401 y redirige a login
+    if (res.status === 401) {
+        console.warn("Token expirado o inválido. Forzando cierre de sesión.");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userInfo");
+        window.location.href = "/login.html";
+        throw new Error("Sesión expirada. Redirigiendo a login."); 
+    }
+    
+    return res;
+}
     // 🆕 Mapeo de Roles (Solo Super Admin es relevante aquí, pero se define completo)
     const ROLE_MAP = {
       'WORKER': 'Trabajador',

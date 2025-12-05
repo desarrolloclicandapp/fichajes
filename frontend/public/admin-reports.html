@@ -201,7 +201,7 @@
       const API_BASE_URL = "/api";
       let reportData = []; // resumen por trabajador (último reporte cargado)
 
-      // 🆕 Mapeo de tipos de ausencia para el PDF
+      // Mapeo de tipos de ausencia para el PDF
       const ABSENCE_TYPES = {
         VACATION: "Vacaciones",
         SICK_LEAVE: "Baja médica",
@@ -228,6 +228,34 @@
           return null;
         }
       }
+      
+      // FUNCIÓN CLAVE: Fetch Protegido con Redirección a Login en caso de 401
+      async function authFetch(endpoint, options = {}) {
+          const token = getToken(); 
+          
+          if (token) {
+              options.headers = {
+                  ...options.headers,
+                  Authorization: `Bearer ${token}`,
+              };
+          }
+
+          // Ejecutar la petición nativa
+          const res = await fetch(API_BASE_URL + endpoint, options);
+
+          // Intercepta 401 y redirige a login
+          if (res.status === 401) {
+              console.warn("Token expirado o inválido. Forzando cierre de sesión.");
+              localStorage.removeItem("authToken");
+              localStorage.removeItem("userInfo");
+              window.location.href = "/login.html"; 
+              // Lanzar error para detener la ejecución de la función que llamó a authFetch
+              throw new Error("Sesión expirada. Redirigiendo a login."); 
+          }
+          
+          return res;
+      }
+
 
       function formatDateForInput(d) {
         const year = d.getFullYear();
@@ -243,6 +271,15 @@
           year: "numeric",
           month: "short",
           day: "numeric",
+        });
+      }
+      
+      function mapDayShort(isoDateStr) {
+        const d = new Date(isoDateStr + "T00:00:00");
+        return d.toLocaleDateString("es-ES", {
+          weekday: "short",
+          month: "2-digit",
+          day: "2-digit",
         });
       }
 
@@ -332,11 +369,9 @@
         if (exportBtn) exportBtn.disabled = true;
 
         try {
-          const res = await fetch(
-            API_BASE_URL + `/admin/reports/summary?from=${from}&to=${to}`,
-            {
-              headers: { Authorization: "Bearer " + getToken() },
-            }
+          // ⬅️ Uso de authFetch
+          const res = await authFetch(
+            `/admin/reports/summary?from=${from}&to=${to}`
           );
 
           if (!res.ok) {
@@ -379,35 +414,24 @@
             exportBtn.disabled = false;
           }
         } catch (err) {
-          console.error(err);
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="5" class="px-4 py-4 text-center text-rose-500 text-sm">
-                Error de conexión al cargar el reporte.
-              </td>
-            </tr>
-          `;
-          document.getElementById("summaryCountText").textContent =
-            "Error de conexión.";
+          // El error de sesión expirada se maneja en authFetch, aquí solo errores de conexión
+          if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+             console.error(err);
+             tbody.innerHTML = `
+              <tr>
+                <td colspan="5" class="px-4 py-4 text-center text-rose-500 text-sm">
+                  Error de conexión al cargar el reporte.
+                </td>
+              </tr>
+            `;
+            document.getElementById("summaryCountText").textContent =
+              "Error de conexión.";
+          }
         }
       }
 
       // Exportar PDF RESUMEN (usa lo que hay en la tabla / filtro)
-      // frontend/public/admin-reports.html
-
-      // ... (añade este helper de mapeo necesario)
-      function mapDayShort(isoDateStr) {
-        const d = new Date(isoDateStr + "T00:00:00");
-        return d.toLocaleDateString("es-ES", {
-          weekday: "short",
-          month: "2-digit",
-          day: "2-digit",
-        });
-      }
-
-      // Exportar PDF RESUMEN (usa lo que hay en la tabla / filtro)
       async function exportToPdf() {
-        // Nota: Cambiado a async para poder hacer la llamada fetch
         const { jsPDF } = window.jspdf;
 
         if (!reportData.length) {
@@ -419,19 +443,17 @@
         const to = document.getElementById("inputTo").value;
         const filter = document.getElementById("filterWorker");
         const selectedId = filter?.value || "";
-
+        
         // ----------------------------------------------------
-        // LOGICA DE CONMUTACIÓN DE REPORTES
-        // ----------------------------------------------------
-
+        // CONMUTACIÓN DE REPORTES: Si se filtra, se exporta el detalle del trabajador.
         if (selectedId) {
-          // Caso 1: Reporte Detallado por Trabajador Único
           const workerName = filter.options[filter.selectedIndex].textContent;
           await generateDetailedPdf(jsPDF, selectedId, workerName, from, to);
           return;
         }
+        // Si no hay filtro, generamos el reporte completo (RESUMEN + AUSENCIAS + LOG DIARIO)
+        // ----------------------------------------------------
 
-        // Caso 2: Reporte Resumen General (Lógica existente y mejorada)
         const workers = reportData;
 
         if (!workers.length) {
@@ -440,24 +462,23 @@
         }
 
         const doc = new jsPDF();
+        let y = 15;
 
-        // ----------------------------------------------------
-        // PARTE 1: RESUMEN DE HORAS (Lógica actual)
-        // ----------------------------------------------------
         doc.setFontSize(16);
-        doc.text("Reporte de fichajes (resumen)", 10, 15);
-
+        doc.text("Reporte de Fichajes Completo", 10, y);
+        y += 7;
         doc.setFontSize(10);
-        doc.text(`Rango: ${from} a ${to}`, 10, 22);
-
-        let y = 30;
-
-        // 1. Resumen de Horas
-        doc.setFontSize(10);
-        doc.text("1. Resumen de Horas de Fichaje", 10, y);
+        doc.text(`Rango: ${from} a ${to}`, 10, y);
+        y += 10;
+        
+        // ----------------------------------------------------
+        // SECCIÓN 1: RESUMEN DE HORAS
+        // ----------------------------------------------------
+        doc.setFontSize(12);
+        doc.text("1. Resumen Consolidado de Horas", 10, y);
         y += 7;
 
-        // encabezados de la tabla de horas
+        // Encabezados
         doc.setFontSize(9);
         doc.text("Trabajador", 10, y);
         doc.text("Días", 90, y);
@@ -486,14 +507,14 @@
         });
 
         // ----------------------------------------------------
-        // PARTE 2: AUSENCIAS APROBADAS (Lógica nueva)
+        // SECCIÓN 2: AUSENCIAS APROBADAS
         // ----------------------------------------------------
         y += 10;
-        doc.setFontSize(10);
+        doc.setFontSize(12);
         doc.text("2. Ausencias Aprobadas en el Período", 10, y);
         y += 7;
 
-        // Encabezados de la tabla de ausencias
+        // Encabezados
         doc.setFontSize(9);
         doc.text("Trabajador", 10, y);
         doc.text("Tipo", 70, y);
@@ -515,13 +536,6 @@
             if (y > 280) {
               doc.addPage();
               y = 20;
-              doc.setFontSize(9);
-              doc.text("Trabajador", 10, y);
-              doc.text("Tipo", 70, y);
-              doc.text("Inicio", 110, y);
-              doc.text("Fin", 140, y);
-              doc.text("Motivo", 170, y);
-              y += 6;
             }
 
             doc.setFontSize(8);
@@ -545,14 +559,90 @@
           doc.setTextColor(0);
           y += 6;
         }
+        
+        // ----------------------------------------------------
+        // SECCIÓN 3: LOG DIARIO DETALLADO (Todos los días y horas)
+        // ----------------------------------------------------
+        y += 10;
+        doc.setFontSize(12);
+        doc.text("3. Log Detallado por Jornada", 10, y);
+        y += 7;
+        
+        // Encabezados del Log Detallado
+        doc.setFontSize(9);
+        doc.text("Trabajador", 10, y);
+        doc.text("Fecha", 55, y);
+        doc.text("Entrada", 85, y);
+        doc.text("Salida", 115, y);
+        doc.text("Trabajadas", 145, y);
+        doc.text("Pausas", 175, y);
+        y += 6;
+        
+        let foundDetails = false;
 
+        for (const w of workers) {
+             const userId = w.userId;
+             const workerName = w.fullName || w.email || 'N/A';
+             
+             // ⬅️ FETCH ASÍNCRONO DENTRO DEL BUCLE (Para obtener el detalle diario)
+             try {
+                const res = await authFetch(
+                    `/admin/reports/worker/${userId}/daily?from=${from}&to=${to}`
+                );
+
+                if (!res.ok) throw new Error("API Error");
+
+                const data = await res.json();
+                const days = data.days || [];
+                
+                days.forEach((day) => {
+                    foundDetails = true;
+                    const dateLabel = mapDayShort(day.date);
+                    const entry = day.firstClockIn ? new Date(day.firstClockIn).toLocaleTimeString("es-ES", { hour12: false }) : "--:--:--";
+                    const exit = day.lastClockOut ? new Date(day.lastClockOut).toLocaleTimeString("es-ES", { hour12: false }) : "--:--:--";
+                    const worked = day.totalWorkedFormatted || "00:00:00";
+                    const pauses = day.totalPauseFormatted || "00:00:00";
+
+                    if (y > 280) {
+                        doc.addPage();
+                        y = 20;
+                    }
+
+                    doc.setFontSize(8);
+                    doc.text(String(workerName).slice(0, 25), 10, y);
+                    doc.text(dateLabel, 55, y);
+                    doc.text(entry, 85, y);
+                    doc.text(exit, 115, y);
+                    doc.text(worked, 145, y);
+                    doc.text(pauses, 175, y);
+                    y += 5;
+                });
+
+             } catch (err) {
+                 if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+                     console.error(`Error al obtener detalle diario para ${workerName}: ${err.message}`);
+                 }
+             }
+        }
+        
+        if (!foundDetails) {
+            doc.setFontSize(9);
+            doc.setTextColor(150);
+            doc.text("No se encontraron detalles de jornadas en este rango.", 10, y);
+            doc.setTextColor(0);
+        }
+
+
+        // ----------------------------------------------------
+        // FINALIZAR PDF
+        // ----------------------------------------------------
         const safeFrom = from.replaceAll("-", "");
         const safeTo = to.replaceAll("-", "");
-        const fileName = `reporte-resumen_${safeFrom}_a_${safeTo}.pdf`;
+        const fileName = `reporte-completo-fichajes_${safeFrom}_a_${safeTo}.pdf`;
 
         doc.save(fileName);
       }
-
+      
       // Modal detalle diario (solo visual)
       async function openDailyModal(userId, fullName, email) {
         const from = document.getElementById("inputFrom").value;
@@ -575,11 +665,9 @@
         modal.classList.remove("hidden");
 
         try {
-          const res = await fetch(
-            `${API_BASE_URL}/admin/reports/worker/${userId}/daily?from=${from}&to=${to}`,
-            {
-              headers: { Authorization: "Bearer " + getToken() },
-            }
+          // ⬅️ Uso de authFetch
+          const res = await authFetch(
+            `/admin/reports/worker/${userId}/daily?from=${from}&to=${to}`
           );
 
           if (!res.ok) {
@@ -634,25 +722,24 @@
             body.appendChild(tr);
           });
         } catch (err) {
-          console.error(err);
-          body.innerHTML = `
-            <tr>
-              <td colspan="5" class="px-3 py-3 text-center text-rose-500">
-                Error de conexión al cargar detalle diario.
-              </td>
-            </tr>
-          `;
+           if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+             console.error(err);
+             body.innerHTML = `
+              <tr>
+                <td colspan="5" class="px-3 py-3 text-center text-rose-500">
+                  Error de conexión al cargar detalle diario.
+                </td>
+              </tr>
+            `;
+           }
         }
       }
 
       function closeDailyModal() {
         document.getElementById("dailyModal").classList.add("hidden");
       }
-      // frontend/public/admin-reports.html
-
-      // ... (dentro del script, antes del INIT)
-
-      // 🆕 Función para generar el PDF DETALLADO individual
+      
+      // 🆕 Función para generar el PDF DETALLADO individual (Usado en el flujo de conmutación)
       async function generateDetailedPdf(jsPDF, userId, workerName, from, to) {
         const doc = new jsPDF();
 
@@ -665,11 +752,9 @@
 
         // 1. Obtener datos detallados
         try {
-          const res = await fetch(
-            `${API_BASE_URL}/admin/reports/worker/${userId}/daily?from=${from}&to=${to}`,
-            {
-              headers: { Authorization: "Bearer " + getToken() },
-            }
+          // ⬅️ Uso de authFetch
+          const res = await authFetch(
+            `/admin/reports/worker/${userId}/daily?from=${from}&to=${to}`
           );
 
           if (!res.ok) {
@@ -703,7 +788,7 @@
           }
 
           days.forEach((day) => {
-            const dateLabel = mapDayShort(day.date); // Usa el helper para un formato corto
+            const dateLabel = mapDayShort(day.date); 
             const entry = day.firstClockIn
               ? new Date(day.firstClockIn).toLocaleTimeString("es-ES", {
                   hour12: false,
@@ -727,12 +812,14 @@
             doc.text(entry, 60, y);
             doc.text(exit, 100, y);
             doc.text(worked, 140, y);
-            doc.text(pauses, 170, y);
+            doc.text(pausas, 170, y);
             y += 5;
           });
         } catch (err) {
-          doc.setFontSize(9);
-          doc.text(`Error de conexión al obtener datos diarios.`, 10, y);
+          if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+             doc.setFontSize(9);
+             doc.text(`Error de conexión al obtener datos diarios.`, 10, y);
+          }
         }
 
         const safeFrom = from.replaceAll("-", "");
@@ -741,6 +828,7 @@
 
         doc.save(fileName);
       }
+      
       // INIT
       document.addEventListener("DOMContentLoaded", () => {
         const user = getUserInfo();
@@ -780,6 +868,23 @@
         document
           .getElementById("btnCloseDailyModal")
           .addEventListener("click", closeDailyModal);
+          
+        // 🆕 Manejador para el botón de Log Completo
+        document
+            .getElementById("btnExportFullLogPdf")
+            .addEventListener("click", () => {
+                const from = document.getElementById("inputFrom").value;
+                const to = document.getElementById("inputTo").value;
+                if (!from || !to) {
+                  alert('Selecciona las fechas "desde" y "hasta".');
+                  return;
+                }
+                const { jsPDF } = window.jspdf;
+                // Como NO creamos el endpoint /full-log, usamos la misma lógica que exportToPdf()
+                // El reporte Completo es el Reporte Resumen General (exportToPdf sin filtro)
+                exportToPdf();
+            });
+
 
         // Filtro por trabajador
         const filter = document.getElementById("filterWorker");
@@ -792,5 +897,7 @@
         });
       });
     </script>
+  </body>
+</html>
   </body>
 </html>

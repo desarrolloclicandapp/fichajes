@@ -12,11 +12,7 @@
           class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
         >
           <div>
-            <img 
-              src="logo-clicandapp.png" 
-              alt="Logo Clic&App" 
-              class="h-20" 
-            />
+            <img src="logo-clicandapp.png" alt="Logo Clic&App" class="h-20" />
             <h1 class="text-1xl font-semibold text-slate-800">
               ClicOnTime - Panel de fichaje
             </h1>
@@ -40,13 +36,13 @@
             >
               Cerrar sesión
             </button>
-             <a
-          href="/manuales/trabajadores.pdf"
-          download="Manual de usuario - trabajadores.pdf"
-          class="text-xs px-3 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-        >
-          Manual de usuario
-        </a>
+            <a
+              href="/manuales/trabajadores.pdf"
+              download="Manual de usuario - trabajadores.pdf"
+              class="text-xs px-3 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+            >
+              Manual de usuario
+            </a>
           </div>
         </div>
 
@@ -215,9 +211,9 @@
 
       // 🆕 Mapeo de Roles
       const ROLE_MAP = {
-        'WORKER': 'Trabajador',
-        'CLIENT_ADMIN': 'Admin Empresa',
-        'SUPER_ADMIN': 'Super Admin'
+        WORKER: "Trabajador",
+        CLIENT_ADMIN: "Admin Empresa",
+        SUPER_ADMIN: "Super Admin",
       };
 
       function getToken() {
@@ -290,9 +286,7 @@
           '<p class="text-slate-400 text-sm">Cargando...</p>';
 
         try {
-          const res = await fetch(API_BASE_URL + "/time/my-today", {
-            headers: { Authorization: "Bearer " + getToken() },
-          });
+          const res = await authFetch("/time/my-today");
 
           if (!res.ok) {
             container.innerHTML =
@@ -388,9 +382,7 @@
           '<p class="text-slate-400 text-sm">Cargando historial...</p>';
 
         try {
-          const res = await fetch(API_BASE_URL + "/time/my-history?days=7", {
-            headers: { Authorization: "Bearer " + getToken() },
-          });
+          const res = await authFetch("/time/my-history?days=7");
 
           if (!res.ok) {
             container.innerHTML =
@@ -585,12 +577,35 @@
         }
       }
 
+      async function authFetch(endpoint, options = {}) {
+        const token = getToken();
+
+        if (token) {
+          options.headers = {
+            ...options.headers,
+            Authorization: `Bearer ${token}`,
+          };
+        }
+
+        const res = await fetch(API_BASE_URL + endpoint, options);
+
+        // 🆕 Intercepta 401 y redirige a login
+        if (res.status === 401) {
+          console.warn("Token expirado o inválido. Forzando cierre de sesión.");
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("userInfo");
+          window.location.href = "/login.html";
+          throw new Error("Sesión expirada. Redirigiendo a login.");
+        }
+
+        return res;
+      }
       // 📡 Enviar evento
+
       async function sendEvent(endpoint, extraBody = {}) {
-        const res = await fetch(API_BASE_URL + endpoint, {
+        const res = await authFetch(endpoint, {
           method: "POST",
           headers: {
-            Authorization: "Bearer " + getToken(),
             "Content-Type": "application/json",
           },
           body: JSON.stringify(extraBody),
@@ -660,12 +675,7 @@
         container.textContent = "Cargando...";
 
         try {
-          const res = await fetch(
-            API_BASE_URL + "/worker/absences/my-requests",
-            {
-              headers: { Authorization: "Bearer " + getToken() },
-            }
-          );
+          const res = await authFetch("/worker/absences/my-requests");
 
           if (!res.ok) {
             container.textContent = "Error al cargar ausencias.";
@@ -733,15 +743,14 @@
         }
 
         try {
-          const res = await fetch(API_BASE_URL + "/worker/absences/requests", {
+          const res = await authFetch("/worker/absences/requests", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: "Bearer " + getToken(),
             },
             body: JSON.stringify({
               type,
-              startDate: from, // "YYYY-MM-DD"
+              startDate: from,
               endDate: to,
               reason,
             }),

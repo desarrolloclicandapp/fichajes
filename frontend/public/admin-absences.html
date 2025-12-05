@@ -208,6 +208,34 @@
         return null;
       }
     }
+    
+    // 🆕 FUNCIÓN CLAVE: Fetch Protegido con Redirección a Login en caso de 401
+    async function authFetch(endpoint, options = {}) {
+        const token = getToken(); 
+        
+        if (token) {
+            options.headers = {
+                ...options.headers,
+                Authorization: `Bearer ${token}`,
+            };
+        }
+
+        // Ejecutar la petición nativa
+        const res = await fetch(API_BASE_URL + endpoint, options);
+
+        // Intercepta 401 y redirige a login
+        if (res.status === 401) {
+            console.warn("Token expirado o inválido. Forzando cierre de sesión.");
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("userInfo");
+            window.location.href = "/login.html"; 
+            // Lanzar error para detener la ejecución de la función que llamó a authFetch
+            throw new Error("Sesión expirada. Redirigiendo a login."); 
+        }
+        
+        return res;
+    }
+
 
     function formatDateShortES(isoString) {
       const d = new Date(isoString);
@@ -275,6 +303,7 @@
     }
 
 
+    // 1. FUNCIÓN loadAbsenceRequests
     async function loadAbsenceRequests() {
       const tbody = document.getElementById('requestsTableBody');
       const statusFilter = document.getElementById('statusFilter').value;
@@ -293,11 +322,9 @@
       if (statusFilter) params.set('status', statusFilter);
 
       try {
-        const res = await fetch(
-          API_BASE_URL + '/admin/absences/requests?' + params.toString(),
-          {
-            headers: { Authorization: 'Bearer ' + getToken() },
-          }
+        // ⬅️ Uso de authFetch
+        const res = await authFetch(
+          '/admin/absences/requests?' + params.toString()
         );
 
         if (!res.ok) {
@@ -313,7 +340,8 @@
         }
 
         const requests = await res.json();
-
+        // ... (resto de la lógica de renderizado)
+        
         countText.textContent =
           requests.length === 1
             ? '1 solicitud encontrada.'
@@ -383,15 +411,18 @@
         });
         
       } catch (err) {
-        console.error(err);
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="px-4 py-4 text-center text-rose-500 text-sm">
-              Error de conexión al cargar solicitudes.
-            </td>
-          </tr>
-        `;
-        countText.textContent = 'Error de conexión.';
+        // El error de sesión expirada se maneja en authFetch
+        if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+          console.error(err);
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="px-4 py-4 text-center text-rose-500 text-sm">
+                Error de conexión al cargar solicitudes.
+              </td>
+            </tr>
+          `;
+          countText.textContent = 'Error de conexión.';
+        }
       }
     }
     
@@ -417,6 +448,7 @@
       document.getElementById('actionModal').classList.add('hidden');
     }
 
+    // 2. FUNCIÓN submitAction
     async function submitAction(e) {
       e.preventDefault();
 
@@ -436,13 +468,13 @@
       };
 
       try {
-        const res = await fetch(
-          API_BASE_URL + `/admin/absences/requests/${id}/status`,
+        // ⬅️ Uso de authFetch
+        const res = await authFetch(
+          `/admin/absences/requests/${id}/status`,
           {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: 'Bearer ' + getToken(),
             },
             body: JSON.stringify(payload),
           }
@@ -459,8 +491,10 @@
         closeActionModal();
         await loadAbsenceRequests();
       } catch (err) {
-        console.error(err);
-        alert('Error de conexión al guardar la decisión');
+        if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+          console.error(err);
+          alert('Error de conexión al guardar la decisión');
+        }
       }
     }
 

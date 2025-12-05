@@ -173,7 +173,6 @@
         return ABSENCE_DETAIL_MAP[type] || type;
     }
 
-
     function getToken() {
       return localStorage.getItem('authToken');
     }
@@ -187,6 +186,34 @@
         return null;
       }
     }
+    
+    // 🆕 FUNCIÓN CLAVE: Fetch Protegido con Redirección a Login en caso de 401
+    async function authFetch(endpoint, options = {}) {
+        const token = getToken(); 
+        
+        if (token) {
+            options.headers = {
+                ...options.headers,
+                Authorization: `Bearer ${token}`,
+            };
+        }
+
+        // Ejecutar la petición nativa
+        const res = await fetch(API_BASE_URL + endpoint, options);
+
+        // Intercepta 401 y redirige a login
+        if (res.status === 401) {
+            console.warn("Token expirado o inválido. Forzando cierre de sesión.");
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("userInfo");
+            window.location.href = "/login.html"; 
+            // Lanzar error para detener la ejecución de la función que llamó a authFetch
+            throw new Error("Sesión expirada. Redirigiendo a login."); 
+        }
+        
+        return res;
+    }
+
 
     function formatDateTime(ts) {
       const d = new Date(ts);
@@ -200,13 +227,15 @@
       };
     }
 
+    // 1. FUNCIÓN loadWorkersForFilter
     async function loadWorkersForFilter() {
       const select = document.getElementById('selectUser');
       try {
-        const res = await fetch(API_BASE_URL + '/admin/workers?includeInactive=true', {
-          headers: { Authorization: 'Bearer ' + getToken() },
-        });
-        if (!res.ok) return;
+        // ⬅️ Uso de authFetch
+        const res = await authFetch('/admin/workers?includeInactive=true');
+        
+        if (!res.ok) return; // Si hay 401, authFetch ya redirigió
+
         const workers = await res.json();
         workers.forEach((w) => {
           const opt = document.createElement('option');
@@ -215,68 +244,16 @@
           select.appendChild(opt);
         });
       } catch (err) {
-        console.error(err);
+        // El error de sesión expirada se maneja en authFetch
+        if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+             console.error(err);
+        }
       }
     }
 
-    // Función para renderizar el filtro de Acción/Estado
-    function renderActionFilter(logType) {
-        const select = document.getElementById('selectAction');
-        const label = document.getElementById('actionLabel');
-        select.innerHTML = '';
+    // ... (renderActionFilter y renderTableHead permanecen iguales)
 
-        let options = [{ value: '', text: 'Todas' }];
-        
-        if (logType === 'time-events') {
-            label.textContent = 'Acción (Fichaje)';
-            options.push(
-                { value: 'CLOCK_IN', text: 'Entrada' },
-                { value: 'BREAK_START', text: 'Inicio pausa' },
-                { value: 'BREAK_END', text: 'Fin pausa' },
-                { value: 'CLOCK_OUT', text: 'Salida' }
-            );
-        } else {
-            label.textContent = 'Estado (Ausencia)';
-            options.push(
-                { value: 'PENDING', text: 'Pendiente' },
-                { value: 'APPROVED', text: 'Aprobada' },
-                { value: 'REJECTED', text: 'Rechazada' }
-            );
-        }
-        
-        options.forEach(opt => {
-            const el = document.createElement('option');
-            el.value = opt.value;
-            el.textContent = opt.text;
-            select.appendChild(el);
-        });
-    }
-
-    // Función para renderizar el encabezado de la tabla
-    function renderTableHead(logType) {
-        const tableHead = document.querySelector('.min-w-full thead tr');
-        
-        if (logType === 'time-events') {
-             tableHead.innerHTML = `
-                <th class="px-4 py-2 text-left">Fecha</th>
-                <th class="px-4 py-2 text-left">Hora</th>
-                <th class="px-4 py-2 text-left">Trabajador</th>
-                <th class="px-4 py-2 text-left">Email</th>
-                <th class="px-4 py-2 text-left">Acción</th>
-                <th class="px-4 py-2 text-left">Motivo</th>
-            `;
-        } else {
-            tableHead.innerHTML = `
-                <th class="px-4 py-2 text-left">Fecha/Hora</th>
-                <th class="px-4 py-2 text-left">Trabajador</th>
-                <th class="px-4 py-2 text-left">Acción</th>
-                <th class="px-4 py-2 text-left">Detalles de Ausencia</th>
-                <th class="px-4 py-2 text-left">Estado</th>
-                <th class="px-4 py-2 text-left"></th>
-            `;
-        }
-    }
-
+    // 2. FUNCIÓN loadLogs
     async function loadLogs() {
       const tbody = document.getElementById('logsTableBody');
       const from = document.getElementById('inputFrom').value;
@@ -312,14 +289,12 @@
           params.set(actionParamName, actionValue);
       }
       
-      const endpoint = API_BASE_URL + '/admin/logs/' + logType;
+      const endpoint = '/admin/logs/' + logType; // Ruta sin API_BASE_URL, lo añade authFetch
 
       try {
-        const res = await fetch(
-          endpoint + '?' + params.toString(),
-          {
-            headers: { Authorization: 'Bearer ' + getToken() },
-          }
+        // ⬅️ Uso de authFetch
+        const res = await authFetch(
+          endpoint + '?' + params.toString()
         );
 
         if (!res.ok) {
@@ -382,11 +357,10 @@
                       detailsText = detailsText.replace(regex, mapTypeLabel(typeCode));
                   });
                   
-                  // 2. 🆕 Traducir palabras de estado y administración
-                  // **ESTAS SON LAS TRADUCCIONES PARA EL DETALLE**
+                  // 2. Traducir palabras de estado y administración
                   detailsText = detailsText.replace('Decisión: APPROVED', 'Decisión: APROBADA');
                   detailsText = detailsText.replace('Decisión: REJECTED', 'Decisión: RECHAZADA');
-                  detailsText = detailsText.replace('Admin: ', 'Administrador: '); // Traduce "Admin:"
+                  detailsText = detailsText.replace('Admin: ', 'Administrador: '); 
                   detailsText = detailsText.replace(/Tipo final: N\/A/g, 'Tipo final: No Aplica');
               }
               
@@ -414,15 +388,18 @@
         countText.textContent =
           events.length === 1 ? '1 registro encontrado.' : `${events.length} registros encontrados (máx. 500).`;
       } catch (err) {
-        console.error(err);
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="px-4 py-4 text-center text-rose-500 text-sm">
-              Error de conexión al cargar logs.
-            </td>
-          </tr>
-        `;
-        countText.textContent = 'Error de conexión.';
+        // El error de sesión expirada se maneja en authFetch
+        if (err.message !== "Sesión expirada. Redirigiendo a login.") {
+          console.error(err);
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="px-4 py-4 text-center text-rose-500 text-sm">
+                Error de conexión al cargar logs.
+              </td>
+            </tr>
+          `;
+          countText.textContent = 'Error de conexión.';
+        }
       }
     }
 
@@ -432,6 +409,65 @@
       const day = String(d.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
+    
+    // ... (renderActionFilter y renderTableHead definidos aquí, omitidos por brevedad)
+    
+    function renderActionFilter(logType) {
+        const select = document.getElementById('selectAction');
+        const label = document.getElementById('actionLabel');
+        select.innerHTML = '';
+
+        let options = [{ value: '', text: 'Todas' }];
+        
+        if (logType === 'time-events') {
+            label.textContent = 'Acción (Fichaje)';
+            options.push(
+                { value: 'CLOCK_IN', text: 'Entrada' },
+                { value: 'BREAK_START', text: 'Inicio pausa' },
+                { value: 'BREAK_END', text: 'Fin pausa' },
+                { value: 'CLOCK_OUT', text: 'Salida' }
+            );
+        } else {
+            label.textContent = 'Estado (Ausencia)';
+            options.push(
+                { value: 'PENDING', text: 'Pendiente' },
+                { value: 'APPROVED', text: 'Aprobada' },
+                { value: 'REJECTED', text: 'Rechazada' }
+            );
+        }
+        
+        options.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt.value;
+            el.textContent = opt.text;
+            select.appendChild(el);
+        });
+    }
+
+    function renderTableHead(logType) {
+        const tableHead = document.querySelector('.min-w-full thead tr');
+        
+        if (logType === 'time-events') {
+             tableHead.innerHTML = `
+                <th class="px-4 py-2 text-left">Fecha</th>
+                <th class="px-4 py-2 text-left">Hora</th>
+                <th class="px-4 py-2 text-left">Trabajador</th>
+                <th class="px-4 py-2 text-left">Email</th>
+                <th class="px-4 py-2 text-left">Acción</th>
+                <th class="px-4 py-2 text-left">Motivo</th>
+            `;
+        } else {
+            tableHead.innerHTML = `
+                <th class="px-4 py-2 text-left">Fecha/Hora</th>
+                <th class="px-4 py-2 text-left">Trabajador</th>
+                <th class="px-4 py-2 text-left">Acción</th>
+                <th class="px-4 py-2 text-left">Detalles de Ausencia</th>
+                <th class="px-4 py-2 text-left">Estado</th>
+                <th class="px-4 py-2 text-left"></th>
+            `;
+        }
+    }
+
 
     document.addEventListener('DOMContentLoaded', () => {
       const user = getUserInfo();

@@ -327,8 +327,36 @@ async function getWorkerDaily({ requester, fromStr, toStr, workerId }) {
   };
 }
 
+async function getCompanyEventLog({ requester, fromStr, toStr }) {
+  const companyId = resolveCompanyIdFromUser(requester);
+  if (!companyId) {
+    throw { status: 400, message: 'No se ha podido determinar la empresa.' };
+  }
+  const { from, to } = parseDateRange(fromStr, toStr);
+
+  const events = await prisma.timeEvent.findMany({
+    where: {
+      companyId,
+      timestamp: { gte: from, lt: to },
+    },
+    include: {
+      user: {
+        select: {
+          fullName: true,
+          email: true,
+          role: true,
+        },
+      },
+    },
+    orderBy: [{ timestamp: 'asc' }],
+  });
+
+  return { events, range: { from: fromStr, to: toStr } };
+}
+
 module.exports = {
   getCompanySummary,
   getCompanySummaryCsv,
-  getWorkerDaily,          
+  getWorkerDaily,
+  getCompanyEventLog, // <-- EXPORTAR NUEVA FUNCIÓN
 };

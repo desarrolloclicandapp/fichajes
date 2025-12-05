@@ -21,9 +21,13 @@ router.get('/summary', controller.summary);
 // GET /api/admin/reports/export.csv
 router.get('/export.csv', controller.exportCsv);
 
-// 🆕 detalle diario por trabajador
+//  detalle diario por trabajador
 // GET /api/admin/reports/worker/:userId/daily?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get('/worker/:userId/daily', controller.dailyByWorker);
+//  Reporte de log completo (todos los eventos)
+// GET /api/admin/reports/full-log?from=YYYY-MM-DD&to=YYYY-MM-DD
+router.get('/full-log', controller.fullEventLog);
 
+module.exports = router;
 
 module.exports = router;

@@ -57,11 +57,24 @@ async function dailyByWorker(req, res) {
     });
   }
 }
+async function fullEventLog(req, res) {
+  try {
+    const { from, to } = req.query;
+    const data = await reportsService.getCompanyEventLog({
+      requester: req.user,
+      fromStr: from,
+      toStr: to,
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('Full event log error:', err);
+    res.status(err.status || 500).json({ message: err.message || 'Error al generar reporte de eventos' });
+  }
+}
 
 module.exports = {
   summary,
   exportCsv,
-  dailyByWorker,   // <-- añade esto
+  dailyByWorker,
+  fullEventLog, // <-- EXPORTAR NUEVA FUNCIÓN
 };
-
-

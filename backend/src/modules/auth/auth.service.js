@@ -44,7 +44,7 @@ async function login({ email, password }) {
     companyId: user.companyId || null,
   };
 
-  const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '8h' });
+  const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '3d' });
 
   return {
     token,

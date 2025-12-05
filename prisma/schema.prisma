@@ -82,6 +82,9 @@ model User {
   dailySummaries  TimeDailySummary[]
   absenceRequests AbsenceRequest[]
   auditLogs       AuditLog[]
+
+missingClockOuts        MissingClockOut[] @relation("WorkerRelation")
+  reviewedMissingClockOuts MissingClockOut[] @relation("AdminRelation")
 }
 
 model TimeEvent {

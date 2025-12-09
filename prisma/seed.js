@@ -35,7 +35,18 @@ if (!company) {
       // companyId: null
     },
   });
-
+const superAdmin2Password = await bcrypt.hash('info123', 10); // <-- ESTABLECE LA CONTRASEÑA AQUÍ
+  await prisma.user.upsert({
+    where: { email: 'info@clicandapp.com' }, // <-- CAMBIA EL EMAIL AQUÍ
+    update: {},
+    create: {
+      email: 'info@clicandapp.com',
+      passwordHash: superAdmin2Password,
+      fullName: 'ClicAndApp',
+      role: Role.SUPER_ADMIN,
+      isActive: true,
+    },
+  });
   // 3. Admin de la empresa
   const adminPassword = await bcrypt.hash('admin123', 10);
   const admin = await prisma.user.upsert({

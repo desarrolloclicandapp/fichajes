@@ -9,13 +9,14 @@ const env = require('./config/env');
 const authRoutes = require('./modules/auth/auth.routes');
 const timeRoutes = require('./modules/time/time.routes');
 
-// 🆕 módulos admin
+//  módulos admin
 const adminWorkersRoutes = require('./modules/admin/workers/workers.routes');
 const adminReportsRoutes = require('./modules/admin/reports/reports.routes');
 const adminLogsRoutes = require('./modules/admin/logs/logs.routes');
-const adminAbsencesRoutes = require('./modules/admin/absences/absences.routes'); // <-- DEBE ESTAR AQUÍ
+const adminAbsencesRoutes = require('./modules/admin/absences/absences.routes'); // 
+const correctionsRoutes = require('./modules/corrections/corrections.routes'); // 
 //super
-//super
+
 const superCompaniesRoutes = require('./modules/super/companies/companies.routes');
 const absencesRoutes = require('./modules/absences/absences.routes');
 
@@ -39,7 +40,7 @@ app.get('/api/health', (req, res) => {
 
 // Rutas API// Ausencias de trabajador
 app.use('/api/worker/absences', absencesRoutes);
-
+app.use('/api/corrections', correctionsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/time', timeRoutes);
 

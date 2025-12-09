@@ -1,6 +1,6 @@
 // backend/src/modules/corrections/corrections.service.js
-const prisma = require('../../../config/prisma');
-const { Role, TimeEventType, CorrectionState } = require('@prisma/client');
+const prisma = require('../../config/prisma'); // Ruta corregida
+const { Role, TimeEventType } = require('@prisma/client'); // Quitamos CorrectionState para evitar errores de importación
 
 const HOUR_OFFSET_MINUTES = 3 * 60; // 3 horas
 
@@ -14,104 +14,125 @@ function getYesterdayStart() {
 function getYesterdayEnd() {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
-    return d; // Hoy a las 00:00 (final del día de ayer)
+    return d; 
 }
 
 function getScheduledEndTimestamp(date, workEndMinutes) {
     const d = new Date(date);
-    d.setHours(0, 0, 0, 0); // Limpiar hora y usar la fecha correcta
+    d.setHours(0, 0, 0, 0);
     d.setMinutes(workEndMinutes);
     return d;
 }
 
-// 🆕 ESTA FUNCIÓN SIMULA EL TRABAJO PROGRAMADO (CRON JOB)
+// 🆕 SIMULACIÓN AUTOMÁTICA CON TRANSACCIÓN
+function getSearchStartDate() {
+    const d = new Date();
+    d.setDate(d.getDate() - 30); // ⬅️ CAMBIO CLAVE: Miramos 5 días atrás
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+// Función para obtener el final de la búsqueda (Hoy a las 00:00)
+// Esto evita tocar los fichajes "de hoy" que aún están ocurriendo
+function getSearchEndDate() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d; 
+}
+
+// ... getScheduledEndTimestamp ...
+
 async function checkAndInsertProvisional() {
-    // 1. Buscamos todas las jornadas de AYER sin CLOCK_OUT
-    const yesterday = getYesterdayStart();
-    const today = getYesterdayEnd();
+    const searchStart = getSearchStartDate();
+    const searchEnd = getSearchEndDate(); // "Hoy" a las 00:00
     
-    // Esto es muy simplificado: en producción solo buscamos jornadas 'abiertas'
+
+    // Buscar trabajadores con fichajes en ese rango
     const workers = await prisma.user.findMany({
         where: { role: Role.WORKER, isActive: true, companyId: { not: null } },
         include: { 
             timeEvents: {
-                where: { 
-                    timestamp: { gte: yesterday, lt: today },
-                },
+                where: { timestamp: { gte: searchStart, lt: searchEnd } },
                 orderBy: { timestamp: 'asc' }
             },
-            company: { select: { id: true } }
         }
     });
     
-    const newCorrections = [];
+    let createdCount = 0;
     
     for (const worker of workers) {
         if (!worker.workEndMinutes) continue;
-        const events = worker.timeEvents;
 
-        const hasClockIn = events.some(e => e.type === TimeEventType.CLOCK_IN);
-        const hasClockOut = events.some(e => e.type === TimeEventType.CLOCK_OUT);
-        
-        // Si tiene CLOCK_IN pero NO tiene CLOCK_OUT, se considera faltante
-        if (hasClockIn && !hasClockOut) {
-            
-            // 🆕 Regla de 3 horas de offset (SIMULADA, el cron job se encargaría del tiempo)
-            const scheduledEnd = getScheduledEndTimestamp(yesterday, worker.workEndMinutes);
-            // Si el trabajo se ejecuta 3 horas DESPUÉS de la salida programada...
-            // En un cron real, esta lógica sería el filtro de la consulta, no un simple if
-            // if (new Date() < new Date(scheduledEnd.getTime() + HOUR_OFFSET_MINUTES * 60 * 1000)) continue;
+        // Agrupamos eventos por día para procesar cada día individualmente
+        // (Por si olvidó cerrar el viernes Y el sábado)
+        const eventsByDay = {};
+        for (const ev of worker.timeEvents) {
+            const dayKey = ev.timestamp.toISOString().split('T')[0]; // "2023-10-27"
+            if (!eventsByDay[dayKey]) eventsByDay[dayKey] = [];
+            eventsByDay[dayKey].push(ev);
+        }
 
-            const provisionalTime = scheduledEnd;
+        // Revisamos cada día encontrado
+        for (const [dateStr, events] of Object.entries(eventsByDay)) {
+            const hasClockIn = events.some(e => e.type === TimeEventType.CLOCK_IN);
+            const hasClockOut = events.some(e => e.type === TimeEventType.CLOCK_OUT);
 
-            // 1. Insertar el CLOCK_OUT provisional para cerrar la jornada
-            const provisionalEvent = await prisma.timeEvent.create({
-                data: {
-                    type: TimeEventType.CLOCK_OUT,
-                    companyId: worker.companyId,
-                    userId: worker.id,
-                    timestamp: provisionalTime, // Hora de salida predefinida
-                    reason: 'Salida provisional (Olvido de fichaje)',
-                }
-            });
+            // Si ese día entró pero NO salió...
+            if (hasClockIn && !hasClockOut) {
+                const dateObj = new Date(dateStr); // Fecha del olvido
+                const provisionalTime = getScheduledEndTimestamp(dateObj, worker.workEndMinutes);
 
-            // 2. Crear el registro de MissingClockOut para el seguimiento del admin
-            const missingRecord = await prisma.missingClockOut.create({
-                data: {
-                    date: yesterday,
-                    status: CorrectionState.PENDING_ADMIN_REVIEW,
-                    provisionalTime: provisionalTime,
-                    companyId: worker.companyId,
-                    workerId: worker.id,
-                    adminNotes: 'Sistema: Fichaje de salida insertado automáticamente por olvido.'
-                }
-            });
-            newCorrections.push(missingRecord);
+                // Verificamos si ya existe una corrección pendiente para este día para no duplicar
+                const existingCorrection = await prisma.missingClockOut.findFirst({
+                    where: { workerId: worker.id, date: dateObj }
+                });
+
+                if (existingCorrection) continue; // Ya está gestionada o pendiente
+
+                // Crear la corrección
+                await prisma.$transaction([
+                    prisma.timeEvent.create({
+                        data: {
+                            type: TimeEventType.CLOCK_OUT,
+                            companyId: worker.companyId,
+                            userId: worker.id,
+                            timestamp: provisionalTime,
+                            reason: 'Salida provisional (Olvido de fichaje)',
+                        }
+                    }),
+                    prisma.missingClockOut.create({
+                        data: {
+                            date: dateObj,
+                            status: 'PENDING_ADMIN_REVIEW',
+                            provisionalTime: provisionalTime,
+                            companyId: worker.companyId,
+                            workerId: worker.id,
+                            adminNotes: 'Sistema: Fichaje de salida insertado automáticamente.'
+                        }
+                    })
+                ]);
+                
+                createdCount++;
+            }
         }
     }
     
-    return newCorrections.length;
+    return createdCount;
 }
 
-// -------------------------------------------------------------
-// LÓGICA DE ADMIN: Listar, Aprobar, Rechazar
-// -------------------------------------------------------------
-
-// ADMIN: Listar fichajes faltantes para revisión
+// ADMIN: Listar pendientes (Usando string directo)
 async function listMissingClockOuts({ requester }) {
     if (!requester || ![Role.CLIENT_ADMIN, Role.SUPER_ADMIN].includes(requester.role)) {
-        throw { status: 403, message: 'No tienes permiso para ver correcciones.' };
+        throw { status: 403, message: 'No autorizado.' };
     }
     
-    const companyId = requester.companyId;
-
     const items = await prisma.missingClockOut.findMany({
         where: {
-            companyId,
-            status: CorrectionState.PENDING_ADMIN_REVIEW,
+            companyId: requester.companyId,
+            status: 'PENDING_ADMIN_REVIEW', // Filtro seguro
         },
         include: {
-            worker: { select: { fullName: true, email: true, workEndMinutes: true } }
+            worker: { select: { fullName: true, email: true } }
         },
         orderBy: { date: 'asc' }
     });
@@ -119,145 +140,81 @@ async function listMissingClockOuts({ requester }) {
     return items;
 }
 
-// ADMIN: Dar opción al trabajador para corregir
+// ADMIN: Notificar (Aprobar corrección)
 async function enableWorkerCorrection({ admin, missingId, adminNotes }) {
-    if (!admin || ![Role.CLIENT_ADMIN, Role.SUPER_ADMIN].includes(admin.role)) {
-        throw { status: 403, message: 'No autorizado.' };
-    }
-    
     const record = await prisma.missingClockOut.findUnique({ where: { id: missingId } });
-    
-    if (!record || record.companyId !== admin.companyId) {
-        throw { status: 404, message: 'Registro de corrección no encontrado.' };
-    }
-    
-    if (record.status !== CorrectionState.PENDING_ADMIN_REVIEW) {
-         throw { status: 400, message: 'La corrección no está pendiente de aprobación inicial.' };
-    }
+    if (!record || record.companyId !== admin.companyId) throw { status: 404, message: 'No encontrado' };
 
-    const updated = await prisma.missingClockOut.update({
+    return await prisma.missingClockOut.update({
         where: { id: missingId },
         data: {
-            status: CorrectionState.PENDING_WORKER_INPUT,
+            status: 'PENDING_WORKER_INPUT',
             adminNotes: adminNotes,
             adminApproverId: admin.id,
         }
     });
-
-    return updated;
 }
 
-// ADMIN: Rechazar corrección (mantener el provisional)
-async function rejectCorrection({ admin, missingId, adminNotes }) {
-    if (!admin || ![Role.CLIENT_ADMIN, Role.SUPER_ADMIN].includes(admin.role)) {
-        throw { status: 403, message: 'No autorizado.' };
-    }
-    
-    const record = await prisma.missingClockOut.findUnique({ where: { id: missingId } });
-    
-    if (!record || record.companyId !== admin.companyId) {
-        throw { status: 404, message: 'Registro de corrección no encontrado.' };
-    }
-
-    const updated = await prisma.missingClockOut.update({
-        where: { id: missingId },
-        data: {
-            status: CorrectionState.REJECTED,
-            adminNotes: adminNotes + ' (Rechazado)',
-            adminApproverId: admin.id,
-        }
-    });
-
-    return updated;
-}
-
-// -------------------------------------------------------------
-// LÓGICA DE WORKER: Listar, Enviar Corrección
-// -------------------------------------------------------------
-
-// WORKER: Listar correcciones pendientes de su input
+// WORKER: Listar sus pendientes
 async function listWorkerPendingCorrections({ worker }) {
-    const items = await prisma.missingClockOut.findMany({
+    return await prisma.missingClockOut.findMany({
         where: { 
             workerId: worker.id,
-            status: CorrectionState.PENDING_WORKER_INPUT 
+            status: 'PENDING_WORKER_INPUT' 
         },
         orderBy: { date: 'asc' }
     });
-    return items;
 }
 
-// WORKER: Enviar hora de salida correcta
+// WORKER: Enviar corrección
 async function submitWorkerCorrection({ worker, missingId, manualTimeStr, reason }) {
-    const manualTime = getScheduledEndTimestamp(new Date(), 0); // Usaremos un timestamp de hoy temporalmente
-    
     const record = await prisma.missingClockOut.findUnique({ where: { id: missingId } });
+    if (!record || record.workerId !== worker.id) throw { status: 404, message: 'No encontrado' };
     
-    if (!record || record.workerId !== worker.id) {
-        throw { status: 404, message: 'Registro de corrección no encontrado.' };
-    }
-    
-    if (record.status !== CorrectionState.PENDING_WORKER_INPUT) {
-        throw { status: 400, message: 'La corrección no está lista para ser enviada.' };
-    }
-    
-    if (!manualTimeStr) {
-        throw { status: 400, message: 'La hora manual es obligatoria.' };
-    }
+    if (!manualTimeStr) throw { status: 400, message: 'Hora obligatoria' };
 
-    // Calcular el día de la corrección y crear el timestamp
-    const correctionDate = new Date(record.date);
     const [h, m] = manualTimeStr.split(':').map(Number);
-    
-    if (Number.isNaN(h) || Number.isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
-         throw { status: 400, message: 'Formato de hora manual inválido.' };
-    }
-    
-    const finalTime = new Date(correctionDate);
+    const finalTime = new Date(record.date);
     finalTime.setHours(h, m, 0, 0);
 
+    // Transacción para limpiar el provisional y poner el real
+    await prisma.$transaction([
+        // 1. Borrar provisionales de ese día (limpieza)
+        prisma.timeEvent.deleteMany({
+            where: {
+                userId: worker.id,
+                timestamp: record.provisionalTime,
+                type: TimeEventType.CLOCK_OUT
+            }
+        }),
+        // 2. Crear el nuevo fichaje manual
+        prisma.timeEvent.create({
+            data: {
+                type: TimeEventType.CLOCK_OUT,
+                companyId: worker.companyId,
+                userId: worker.id,
+                timestamp: finalTime,
+                reason: `Corrección: ${reason}`
+            }
+        }),
+        // 3. Cerrar la incidencia
+        prisma.missingClockOut.update({
+            where: { id: missingId },
+            data: {
+                status: 'COMPLETED',
+                manualTime: finalTime,
+                reason: reason,
+            }
+        })
+    ]);
 
-    // 1. ELIMINAR el evento provisional insertado por el sistema
-    await prisma.timeEvent.deleteMany({
-        where: {
-            userId: worker.id,
-            companyId: worker.companyId,
-            timestamp: record.provisionalTime,
-            type: TimeEventType.CLOCK_OUT,
-            // (En un sistema real, el evento provisional tendría un ID único en el MissingClockOut)
-        }
-    });
-
-    // 2. INSERTAR el nuevo evento con la hora manual
-    await prisma.timeEvent.create({
-        data: {
-            type: TimeEventType.CLOCK_OUT,
-            companyId: worker.companyId,
-            userId: worker.id,
-            timestamp: finalTime,
-            reason: `Corrección Manual: ${reason || 'Sin motivo'}`
-        }
-    });
-
-    // 3. ACTUALIZAR el registro de MissingClockOut
-    const updated = await prisma.missingClockOut.update({
-        where: { id: missingId },
-        data: {
-            status: CorrectionState.COMPLETED,
-            manualTime: finalTime,
-            reason: reason || null,
-        }
-    });
-
-    return updated;
+    return { success: true };
 }
-
 
 module.exports = {
     checkAndInsertProvisional,
     listMissingClockOuts,
     enableWorkerCorrection,
-    rejectCorrection,
     listWorkerPendingCorrections,
     submitWorkerCorrection,
 };

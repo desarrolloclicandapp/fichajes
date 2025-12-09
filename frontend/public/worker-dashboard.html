@@ -45,7 +45,37 @@
             </a>
           </div>
         </div>
-
+        <div
+          id="correctionAlert"
+          class="hidden mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4"
+        >
+          <div class="flex items-start gap-3">
+            <div class="text-amber-600 text-xl">⚠️</div>
+            <div class="flex-1">
+              <h3 class="text-sm font-bold text-amber-800">
+                Corrección requerida
+              </h3>
+              <p class="text-xs text-amber-700 mt-1">
+                Olvidaste cerrar tu turno el día
+                <span id="correctionDate" class="font-bold"></span>. El sistema
+                marcó provisionalmente las <span id="correctionTime"></span>.
+              </p>
+              <div class="mt-3 flex items-center gap-2">
+                <input
+                  type="time"
+                  id="manualExitTime"
+                  class="border border-amber-300 rounded-lg px-2 py-1 text-sm bg-white"
+                />
+                <button
+                  onclick="submitWorkerCorrection()"
+                  class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition"
+                >
+                  Confirmar Hora Real
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-2">
             <span class="text-sm text-slate-500">Estado actual:</span>
@@ -262,7 +292,67 @@
         tick();
         setInterval(tick, 1000);
       }
+      let currentCorrectionId = null;
 
+      async function checkCorrections() {
+        try {
+          const res = await authFetch("/corrections/worker/pending");
+          const data = await res.json();
+
+          const alertBox = document.getElementById("correctionAlert");
+
+          if (data.length > 0) {
+            const item = data[0]; // Tomamos la primera pendiente
+            currentCorrectionId = item.id;
+
+            // Mostrar fecha formateada
+            document.getElementById("correctionDate").textContent = new Date(
+              item.date
+            ).toLocaleDateString();
+            document.getElementById("correctionTime").textContent = new Date(
+              item.provisionalTime
+            ).toLocaleTimeString();
+
+            alertBox.classList.remove("hidden");
+          } else {
+            alertBox.classList.add("hidden");
+          }
+        } catch (error) {
+          console.error("Error buscando correcciones", error);
+        }
+      }
+
+      async function submitWorkerCorrection() {
+        const timeVal = document.getElementById("manualExitTime").value;
+        if (!timeVal) return alert("Selecciona la hora real de salida.");
+
+        try {
+          const res = await authFetch(
+            `/corrections/worker/${currentCorrectionId}/submit`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                manualTime: timeVal,
+                reason: "Corrección manual por olvido",
+              }),
+            }
+          );
+
+          if (res.ok) {
+            alert("¡Turno corregido y actualizado correctamente!");
+            document.getElementById("correctionAlert").classList.add("hidden");
+            // Opcional: Recargar historial para ver el cambio
+            loadHistory();
+          } else {
+            alert("Error al enviar corrección.");
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      // Agrega checkCorrections() al DOMContentLoaded junto con startClock(), loadTodayEvents(), etc.
       // Helpers horario usuario (minutos a Date hoy)
       function getTodayAtMinutes(minutes) {
         if (minutes == null) return null;
@@ -800,7 +890,7 @@
         startClock();
         loadTodayEvents();
         loadHistory();
-
+        checkCorrections();
         document.getElementById("btnClockIn").addEventListener("click", () => {
           sendEvent("/time/clock-in");
         });
